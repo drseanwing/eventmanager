@@ -3,7 +3,10 @@
 **Document Purpose:** Admin interface and Custom Post Type definitions  
 **Production Paths:** 
 - `event-management-system/admin/`
-- `event-management-system/includes/cpt/`
+- `event-management-system/includes/custom-post-types/`
+
+**Last Updated:** January 2026  
+**Version:** 1.4.0 (UAT Release)
 
 ---
 

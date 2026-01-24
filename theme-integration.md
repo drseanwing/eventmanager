@@ -2,7 +2,8 @@
 
 **Document Purpose:** Event Management System integration files  
 **Production Path:** `conference-starter/`  
-**Integration Version:** 1.1.0
+**Integration Version:** 2.3.0 (UAT Release)  
+**Last Updated:** January 2026
 
 ---
 
