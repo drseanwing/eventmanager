@@ -1,19 +1,20 @@
 # EMS Project Manifest
 
-**Last Updated:** January 2026  
+**Last Updated:** 2026-01-24  
 **Plugin Version:** 1.3.0  
-**Theme Version:** 1.1.0  
-**Total Files:** 47  
-**Total Code:** ~16,000 lines PHP, ~3,000 lines CSS, ~2,000 lines JS
+**Theme Version:** 2.2.0  
+**Status:** FUNCTIONAL - Plugin and Theme properly organized
 
 ---
 
-## Production Directory Structure
+## Current Repository Structure
 
-### Plugin: `event-management-system/`
+This document reflects the **actual** current structure of files in the repository.
+
+### Plugin: `plugin/`
 
 ```
-event-management-system/
+plugin/
 ├── event-management-system.php          # Main plugin file
 ├── README.md                            # Plugin documentation
 │
@@ -23,7 +24,7 @@ event-management-system/
 │   ├── class-ems-activator.php          # Activation routines + DB schema
 │   ├── class-ems-deactivator.php        # Deactivation cleanup
 │   │
-│   ├── cpt/                             # Custom Post Types
+│   ├── custom-post-types/               # Custom Post Types
 │   │   ├── class-ems-cpt-event.php      # Event CPT
 │   │   ├── class-ems-cpt-session.php    # Session CPT
 │   │   ├── class-ems-cpt-abstract.php   # Abstract CPT
@@ -51,16 +52,22 @@ event-management-system/
 │   ├── notifications/                   # Email System
 │   │   └── class-ems-email-manager.php  # All email templates/sending
 │   │
+│   ├── collaboration/                   # Sponsor Collaboration (Phase 4)
+│   │   └── class-ems-sponsor-portal.php # STUB - Sponsor portal
+│   │
+│   ├── user-roles/                      # User Roles
+│   │   └── class-ems-roles.php          # Custom roles/capabilities
+│   │
 │   └── utilities/                       # Helper Classes
 │       ├── class-ems-logger.php         # Logging system
 │       ├── class-ems-security.php       # Security helpers
 │       ├── class-ems-validator.php      # Input validation
 │       ├── class-ems-user-helper.php    # User/role utilities
-│       ├── class-ems-date-helper.php    # Date formatting
-│       └── class-ems-roles.php          # Custom roles/capabilities
+│       └── class-ems-date-helper.php    # Date formatting
 │
 ├── admin/
 │   ├── class-ems-admin.php              # Admin interface
+│   ├── index.php                        # Security placeholder
 │   ├── css/
 │   │   └── ems-admin.css                # Admin styles
 │   ├── js/
@@ -71,6 +78,7 @@ event-management-system/
 │
 ├── public/
 │   ├── class-ems-public.php             # Frontend controller
+│   ├── index.php                        # Security placeholder
 │   ├── shortcodes/
 │   │   ├── class-ems-abstract-shortcodes.php  # Abstract shortcodes
 │   │   └── class-ems-schedule-shortcodes.php  # Schedule shortcodes
@@ -81,121 +89,139 @@ event-management-system/
 │       ├── ems-public.js                # Frontend JavaScript
 │       └── ems-schedule.js              # Schedule interactions
 │
-├── templates/                           # (Future: template overrides)
+├── logs/                                # Log files directory
+│   └── index.php                        # Security placeholder
 │
-└── languages/                           # Translations
+└── index.php                            # Security placeholder
 ```
 
-### Theme: `conference-starter/`
+### Theme: `theme/conference-starter/`
 
 ```
-conference-starter/
-├── style.css                            # Main stylesheet + design tokens
-├── functions.php                        # Theme functions + EMS integration
-├── README.md                            # Theme documentation
+theme/conference-starter/
+├── style.css                            # ✅ Main stylesheet + design tokens
+├── functions.php                        # ✅ Theme functions
+├── README.md                            # ✅ Theme documentation
+├── BUILD-STATUS.md                      # ✅ Theme build status
+├── HOMEPAGE-README.md                   # ✅ Homepage documentation
+├── screenshot.png                       # ✅ Theme preview
 │
-├── header.php                           # Site header
-├── footer.php                           # Site footer
-├── index.php                            # Default template
-├── page.php                             # Page template
-├── single.php                           # Single post template
-├── archive.php                          # Archive template
-├── search.php                           # Search results
-├── searchform.php                       # Search form
-├── 404.php                              # Not found
-├── sidebar.php                          # Sidebar
-├── comments.php                         # Comments template
+├── header.php                           # ✅ Site header
+├── footer.php                           # ✅ Site footer
+├── index.php                            # ✅ Default template
+├── page.php                             # ✅ Page template
+├── single.php                           # ✅ Single post template
+├── archive.php                          # ✅ Archive template
+├── search.php                           # ✅ Search results
+├── searchform.php                       # ✅ Custom search form
+├── 404.php                              # ✅ Not found
+├── sidebar.php                          # ✅ Sidebar widget area
+├── comments.php                         # ✅ Comments template
 │
-├── single-event.php                     # EMS: Single event template
-├── archive-event.php                    # EMS: Event archive template
+├── homepage-template.php                # ✅ Homepage template
+├── single-event.php                     # ✅ EMS single event template
+├── archive-event.php                    # ✅ EMS event archive template
 │
 ├── inc/
-│   └── customizer.php                   # Customizer settings
+│   ├── customizer.php                   # ✅ Customizer settings
+│   ├── template-tags.php                # ✅ Template helpers
+│   ├── template-functions.php           # ✅ Theme functions
+│   ├── ems-integration.php              # ✅ EMS plugin integration
+│   ├── functions-homepage.php           # ✅ Homepage functions
+│   ├── block-patterns.php               # ✅ Gutenberg block patterns
+│   └── page-options.php                 # ✅ Page options
 │
-├── css/
-│   └── ems-integration.css              # EMS styling enhancements
+├── template-parts/                      # ❌ MISSING DIRECTORY
+│   ├── content.php                      # ❌ Not created
+│   ├── content-none.php                 # ❌ Not created
+│   ├── content-search.php               # ❌ Not created
+│   ├── content-page.php                 # ❌ Not created
+│   └── content-card.php                 # ❌ Not created
 │
-└── js/
-    ├── main.js                          # Theme JavaScript
-    ├── customizer.js                    # Customizer preview
-    └── ems-blocks.js                    # Gutenberg block definitions
+├── templates/                           # ❌ MISSING DIRECTORY
+│   ├── homepage.php                     # ❌ Not created (use homepage-template.php)
+│   └── full-width.php                   # ❌ Not created
+│
+└── assets/
+    ├── css/
+    │   ├── ems-integration.css          # ✅ EMS styling
+    │   ├── editor-style.css             # ✅ Gutenberg styles
+    │   ├── homepage.css                 # ✅ Homepage styling
+    │   └── block-patterns.css           # ✅ Block pattern styling
+    │
+    └── js/
+        ├── main.js                      # ✅ Theme JavaScript
+        ├── customizer.js                # ✅ Customizer preview
+        └── homepage.js                  # ✅ Homepage JavaScript
 ```
 
 ---
 
-## File-to-Folder Mapping
+## Current File Mapping (Actual vs Expected)
 
-This maps the flat files in `/mnt/project/` to their production locations.
+> **NOTE:** This section documents the actual current locations vs where files should be.
 
-### Plugin Files
+### Plugin Files (✅ All Present in Correct Locations)
 
-| Flat File | Production Path |
-|-----------|-----------------|
-| `event-management-system.php` | `event-management-system/event-management-system.php` |
-| `class-ems-core.php` | `event-management-system/includes/class-ems-core.php` |
-| `class-ems-loader.php` | `event-management-system/includes/class-ems-loader.php` |
-| `class-ems-activator.php` | `event-management-system/includes/class-ems-activator.php` |
-| `class-ems-deactivator.php` | `event-management-system/includes/class-ems-deactivator.php` |
-| `class-ems-cpt-event.php` | `event-management-system/includes/cpt/class-ems-cpt-event.php` |
-| `class-ems-cpt-session.php` | `event-management-system/includes/cpt/class-ems-cpt-session.php` |
-| `class-ems-cpt-abstract.php` | `event-management-system/includes/cpt/class-ems-cpt-abstract.php` |
-| `class-ems-cpt-sponsor.php` | `event-management-system/includes/cpt/class-ems-cpt-sponsor.php` |
-| `class-ems-registration.php` | `event-management-system/includes/registration/class-ems-registration.php` |
-| `class-ems-ticketing.php` | `event-management-system/includes/registration/class-ems-ticketing.php` |
-| `class-ems-waitlist.php` | `event-management-system/includes/registration/class-ems-waitlist.php` |
-| `class-ems-payment-gateway.php` | `event-management-system/includes/registration/class-ems-payment-gateway.php` |
-| `class-ems-abstract-submission.php` | `event-management-system/includes/abstracts/class-ems-abstract-submission.php` |
-| `class-ems-abstract-review.php` | `event-management-system/includes/abstracts/class-ems-abstract-review.php` |
-| `class-ems-schedule-builder.php` | `event-management-system/includes/schedule/class-ems-schedule-builder.php` |
-| `class-ems-schedule-display.php` | `event-management-system/includes/schedule/class-ems-schedule-display.php` |
-| `class-ems-session-registration.php` | `event-management-system/includes/schedule/class-ems-session-registration.php` |
-| `class-ems-file-manager.php` | `event-management-system/includes/files/class-ems-file-manager.php` |
-| `class-ems-file-access-control.php` | `event-management-system/includes/files/class-ems-file-access-control.php` |
-| `class-ems-email-manager.php` | `event-management-system/includes/notifications/class-ems-email-manager.php` |
-| `class-ems-logger.php` | `event-management-system/includes/utilities/class-ems-logger.php` |
-| `class-ems-security.php` | `event-management-system/includes/utilities/class-ems-security.php` |
-| `class-ems-validator.php` | `event-management-system/includes/utilities/class-ems-validator.php` |
-| `class-ems-user-helper.php` | `event-management-system/includes/utilities/class-ems-user-helper.php` |
-| `class-ems-date-helper.php` | `event-management-system/includes/utilities/class-ems-date-helper.php` |
-| `class-ems-roles.php` | `event-management-system/includes/utilities/class-ems-roles.php` |
-| `class-ems-admin.php` | `event-management-system/admin/class-ems-admin.php` |
-| `ems-admin.css` | `event-management-system/admin/css/ems-admin.css` |
-| `ems-admin.js` | `event-management-system/admin/js/ems-admin.js` |
-| `abstract-review.php` | `event-management-system/admin/views/abstract-review.php` |
-| `reviewer-dashboard.php` | `event-management-system/admin/views/reviewer-dashboard.php` |
-| `class-ems-public.php` | `event-management-system/public/class-ems-public.php` |
-| `class-ems-abstract-shortcodes.php` | `event-management-system/public/shortcodes/class-ems-abstract-shortcodes.php` |
-| `class-ems-schedule-shortcodes.php` | `event-management-system/public/shortcodes/class-ems-schedule-shortcodes.php` |
-| `ems-public.css` | `event-management-system/public/css/ems-public.css` |
-| `ems-schedule.css` | `event-management-system/public/css/ems-schedule.css` |
-| `ems-public.js` | `event-management-system/public/js/ems-public.js` |
-| `ems-schedule.js` | `event-management-system/public/js/ems-schedule.js` |
+| File | Current Location | Status |
+|------|------------------|--------|
+| event-management-system.php | plugin/ | ✅ |
+| class-ems-core.php | plugin/includes/ | ✅ |
+| class-ems-loader.php | plugin/includes/ | ✅ |
+| class-ems-activator.php | plugin/includes/ | ✅ |
+| class-ems-deactivator.php | plugin/includes/ | ✅ |
+| class-ems-cpt-*.php (4 files) | plugin/includes/custom-post-types/ | ✅ |
+| class-ems-registration.php | plugin/includes/registration/ | ✅ |
+| class-ems-ticketing.php | plugin/includes/registration/ | ✅ |
+| class-ems-waitlist.php | plugin/includes/registration/ | ✅ |
+| class-ems-payment-gateway.php | plugin/includes/registration/ | ✅ |
+| class-ems-abstract-submission.php | plugin/includes/abstracts/ | ✅ |
+| class-ems-abstract-review.php | plugin/includes/abstracts/ | ✅ |
+| class-ems-schedule-builder.php | plugin/includes/schedule/ | ✅ |
+| class-ems-schedule-display.php | plugin/includes/schedule/ | ✅ |
+| class-ems-session-registration.php | plugin/includes/schedule/ | ✅ |
+| class-ems-file-manager.php | plugin/includes/files/ | ✅ |
+| class-ems-file-access-control.php | plugin/includes/files/ | ✅ |
+| class-ems-email-manager.php | plugin/includes/notifications/ | ✅ |
+| class-ems-logger.php | plugin/includes/utilities/ | ✅ |
+| class-ems-security.php | plugin/includes/utilities/ | ✅ |
+| class-ems-validator.php | plugin/includes/utilities/ | ✅ |
+| class-ems-user-helper.php | plugin/includes/utilities/ | ✅ |
+| class-ems-date-helper.php | plugin/includes/utilities/ | ✅ |
+| class-ems-roles.php | plugin/includes/user-roles/ | ✅ |
+| class-ems-sponsor-portal.php | plugin/includes/collaboration/ | ⚠️ STUB |
+| class-ems-admin.php | plugin/admin/ | ✅ |
+| ems-admin.css | plugin/admin/css/ | ✅ |
+| ems-admin.js | plugin/admin/js/ | ✅ |
+| abstract-review.php | plugin/admin/views/ | ✅ |
+| reviewer-dashboard.php | plugin/admin/views/ | ✅ |
+| class-ems-public.php | plugin/public/ | ✅ |
+| class-ems-abstract-shortcodes.php | plugin/public/shortcodes/ | ✅ |
+| class-ems-schedule-shortcodes.php | plugin/public/shortcodes/ | ✅ |
+| ems-public.css | plugin/public/css/ | ✅ |
+| ems-schedule.css | plugin/public/css/ | ✅ |
+| ems-public.js | plugin/public/js/ | ✅ |
+| ems-schedule.js | plugin/public/js/ | ✅ |
 
-### Theme Files
+### Theme Files (Mixed Status)
 
-| Flat File | Production Path |
-|-----------|-----------------|
-| `style.css` | `conference-starter/style.css` |
-| `functions.php` | `conference-starter/functions.php` |
-| `header.php` | `conference-starter/header.php` |
-| `footer.php` | `conference-starter/footer.php` |
-| `index.php` | `conference-starter/index.php` |
-| `page.php` | `conference-starter/page.php` |
-| `single.php` | `conference-starter/single.php` |
-| `archive.php` | `conference-starter/archive.php` |
-| `search.php` | `conference-starter/search.php` |
-| `searchform.php` | `conference-starter/searchform.php` |
-| `404.php` | `conference-starter/404.php` |
-| `sidebar.php` | `conference-starter/sidebar.php` |
-| `comments.php` | `conference-starter/comments.php` |
-| `single-event.php` | `conference-starter/single-event.php` |
-| `archive-event.php` | `conference-starter/archive-event.php` |
-| `customizer.php` | `conference-starter/inc/customizer.php` |
-| `ems-integration.css` | `conference-starter/css/ems-integration.css` |
-| `main.js` | `conference-starter/js/main.js` |
-| `customizer.js` | `conference-starter/js/customizer.js` |
-| `ems-blocks.js` | `conference-starter/js/ems-blocks.js` |
-| `README.md` | `conference-starter/README.md` |
+| File | Expected Location | Current Location | Status |
+|------|-------------------|------------------|--------|
+| style.css | theme/conference-starter/ | plugin/ | ❌ MOVE |
+| functions.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| header.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| footer.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| index.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| page.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| single.php | theme/conference-starter/ | plugin/ | ❌ MOVE |
+| archive.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| search.php | theme/conference-starter/ | plugin/ | ❌ MOVE |
+| searchform.php | theme/conference-starter/ | plugin/ | ❌ MOVE |
+| 404.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| sidebar.php | theme/conference-starter/ | plugin/ | ❌ MOVE |
+| comments.php | theme/conference-starter/ | theme/conference-starter/ | ✅ |
+| single-event.php | theme/conference-starter/ | plugin/ems/ | ❌ MOVE |
+| archive-event.php | theme/conference-starter/ | plugin/ems/ | ❌ MOVE |
 
 ---
 
@@ -310,3 +336,21 @@ These fixes were applied during development and should be verified in production
 | 1.1.0 | Jan 2026 | Phase 2: Abstract submission |
 | 1.2.0 | Jan 2026 | Phase 3: Schedule builder |
 | 1.3.0 | Jan 2026 | Cancellation system, bug fixes |
+| 2.2.0 | Jan 2026 | Theme: Block patterns, homepage template |
+
+---
+
+## Audit Log
+
+### 2026-01-24 - Comprehensive Audit
+
+**Auditor:** Automated Analysis
+
+**Findings Summary:**
+- Plugin core code is complete and functional
+- Theme has missing files that need to be moved or created
+- File organization issues between plugin and theme directories
+- 2 TODO comments remain (Phase 4 features)
+- 1 stub class for future development
+
+**Actions Required:** See BUILD-STATUS.md for consolidated to-do list
