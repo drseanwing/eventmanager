@@ -8,6 +8,7 @@
  *
  * @package Conference_Starter
  * @since 1.2.0
+ * @moved 2.3.0 Moved to templates/ directory
  */
 
 get_header();

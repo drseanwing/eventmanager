@@ -44,7 +44,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		else :
 			?>
 
-			<p><?php esc_html_e( 'It seems we can\'t find what you\'re looking for. Perhaps searching can help.', 'conference-starter' ); ?></p>
+			<p><?php esc_html_e( 'It seems we cannot find what you are looking for. Perhaps searching can help.', 'conference-starter' ); ?></p>
 			<?php
 			get_search_form();
 
