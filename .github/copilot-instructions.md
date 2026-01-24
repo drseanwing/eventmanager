@@ -90,7 +90,7 @@ try {
 
 ### Technology Stack
 
-- **Platform**: WordPress 5.8+ (PHP 7.4+)
+- **Platform**: WordPress 6.0+ (PHP 8.0+ recommended, 7.4 minimum)
 - **Database**: MySQL/MariaDB via WordPress $wpdb
 - **Frontend**: Vanilla JavaScript (ES6+), jQuery where necessary
 - **CSS**: Custom properties (CSS variables) with GrandConference design tokens
@@ -192,9 +192,9 @@ class EMS_CPT_Event extends EMS_CPT_Abstract {
 ```php
 // Use nonce verification for all meta box saves
 public function save_meta_box($post_id, $post) {
-    // Verify nonce
+    // Verify nonce - sanitize before verification
     if (!isset($_POST['ems_event_meta_nonce']) || 
-        !wp_verify_nonce($_POST['ems_event_meta_nonce'], 'ems_event_meta')) {
+        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['ems_event_meta_nonce'])), 'ems_event_meta')) {
         return;
     }
     
@@ -209,7 +209,7 @@ public function save_meta_box($post_id, $post) {
     }
     
     // Sanitize and save
-    $event_date = sanitize_text_field($_POST['ems_event_date']);
+    $event_date = isset($_POST['ems_event_date']) ? sanitize_text_field($_POST['ems_event_date']) : '';
     update_post_meta($post_id, '_ems_event_date', $event_date);
 }
 ```
@@ -220,9 +220,12 @@ public function save_meta_box($post_id, $post) {
 public function ajax_register_participant() {
     check_ajax_referer('ems_public_nonce', 'nonce');
     
+    // Sanitize superglobal before processing
+    $post_data = array_map('sanitize_text_field', wp_unslash($_POST));
+    
     // Validate input
     $validator = new EMS_Validator();
-    $data = $validator->validate_registration_data($_POST);
+    $data = $validator->validate_registration_data($post_data);
     
     if (is_wp_error($data)) {
         wp_send_json_error($data->get_error_message());
@@ -342,6 +345,12 @@ $email_manager->send_registration_confirmation(array(
 jQuery(document).ready(function($) {
     $('#ems-registration-form').on('submit', function(e) {
         e.preventDefault();
+        
+        // Client-side validation before submission
+        if (!validateRegistrationForm(this)) {
+            showErrorMessage('Please fill in all required fields.');
+            return;
+        }
         
         $.ajax({
             url: ems_public.ajax_url,
@@ -503,7 +512,7 @@ wp_enqueue_style('ems-integration',
 
 Follow WordPress PHP Coding Standards:
 - Use tabs for indentation
-- Brace style: opening brace on same line
+- Brace style: opening brace on next line (Allman style)
 - Space after control structures: `if ( condition )`
 - Yoda conditions: `if ( 5 === $value )`
 - No shorthand PHP tags
