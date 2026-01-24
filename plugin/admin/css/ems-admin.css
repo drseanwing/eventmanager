@@ -1,0 +1,42 @@
+/**
+ * Event Management System - Admin Styles
+ *
+ * @package EventManagementSystem
+ * @since   1.0.0
+ */
+
+/* Dashboard */
+.ems-dashboard {
+	padding: 20px;
+}
+
+/* Event List */
+.ems-event-list {
+	padding: 20px;
+}
+
+.ems-event-item {
+	margin-bottom: 15px;
+	padding: 15px;
+	border: 1px solid #ddd;
+	background: #fff;
+}
+
+/* Meta Boxes */
+.form-table th {
+	width: 200px;
+	font-weight: 600;
+}
+
+/* Schedule Builder */
+.ems-schedule-builder {
+	margin: 20px 0;
+}
+
+.ems-session-slot {
+	padding: 10px;
+	margin: 5px;
+	border: 1px solid #ccc;
+	background: #f9f9f9;
+	cursor: move;
+}

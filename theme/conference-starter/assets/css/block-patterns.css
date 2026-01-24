@@ -1,0 +1,539 @@
+/**
+ * Block Patterns Styles
+ *
+ * Styles for Gutenberg block patterns in Conference Starter theme.
+ * These styles enhance native WordPress blocks to match the MNResus design.
+ *
+ * @package Conference_Starter
+ * @since 2.2.0
+ */
+
+/* ==========================================================================
+   DESIGN TOKENS
+   ========================================================================== */
+
+:root {
+    /* MNResus Brand Colors */
+    --color-primary: #1a365d;
+    --color-primary-light: #2d4a7c;
+    --color-primary-dark: #0f1f35;
+    --color-secondary: #0d9488;
+    --color-secondary-light: #14b8a6;
+    --color-secondary-dark: #0a6b62;
+    --color-accent: #ea580c;
+    --color-accent-light: #fb923c;
+    --color-accent-dark: #c2410c;
+    
+    /* Neutral Colors */
+    --color-white: #ffffff;
+    --color-light-gray: #f8fafc;
+    --color-medium-gray: #64748b;
+    --color-dark-gray: #334155;
+    --color-black: #0f172a;
+    
+    /* Typography */
+    --font-heading: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+/* ==========================================================================
+   WORDPRESS COLOR PALETTE CLASSES
+   ========================================================================== */
+
+.has-primary-color { color: var(--color-primary) !important; }
+.has-primary-background-color { background-color: var(--color-primary) !important; }
+.has-primary-dark-color { color: var(--color-primary-dark) !important; }
+.has-primary-dark-background-color { background-color: var(--color-primary-dark) !important; }
+.has-secondary-color { color: var(--color-secondary) !important; }
+.has-secondary-background-color { background-color: var(--color-secondary) !important; }
+.has-accent-color { color: var(--color-accent) !important; }
+.has-accent-background-color { background-color: var(--color-accent) !important; }
+.has-light-gray-color { color: var(--color-light-gray) !important; }
+.has-light-gray-background-color { background-color: var(--color-light-gray) !important; }
+.has-medium-gray-color { color: var(--color-medium-gray) !important; }
+.has-white-color { color: var(--color-white) !important; }
+.has-white-background-color { background-color: var(--color-white) !important; }
+
+/* ==========================================================================
+   GLOBAL SECTION STYLES
+   ========================================================================== */
+
+.section {
+    position: relative;
+}
+
+.section-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.section-subtitle {
+    color: var(--color-medium-gray);
+    margin-bottom: 48px;
+}
+
+/* ==========================================================================
+   HERO SECTION
+   ========================================================================== */
+
+.homepage-hero {
+    position: relative;
+}
+
+.homepage-hero .wp-block-cover__background {
+    background: linear-gradient(135deg, rgba(26, 54, 93, 0.92) 0%, rgba(15, 31, 53, 0.96) 100%) !important;
+}
+
+.hero-date-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 10px 24px !important;
+    color: #fff;
+    margin-bottom: 24px;
+}
+
+.hero-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: #fff !important;
+    margin-bottom: 24px;
+}
+
+.hero-subtitle {
+    color: rgba(255, 255, 255, 0.85) !important;
+    line-height: 1.7;
+    margin-bottom: 24px;
+}
+
+.hero-location {
+    color: rgba(255, 255, 255, 0.7) !important;
+    margin-bottom: 32px;
+}
+
+/* Hero Buttons */
+.homepage-hero .wp-block-button.is-style-outline .wp-block-button__link {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+}
+
+.homepage-hero .wp-block-button.is-style-outline .wp-block-button__link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+}
+
+/* ==========================================================================
+   VALUE CARDS
+   ========================================================================== */
+
+.section-values {
+    background-color: var(--color-light-gray);
+}
+
+.value-card {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+}
+
+.value-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.value-card-icon {
+    margin-bottom: 16px;
+}
+
+.value-card-title {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.value-card-text {
+    color: var(--color-medium-gray);
+}
+
+/* ==========================================================================
+   EVENTS SECTION
+   ========================================================================== */
+
+.section-events {
+    background-color: var(--color-white);
+}
+
+/* Style the EMS plugin event cards */
+.section-events .ems-upcoming-events {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.section-events .ems-event-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section-events .ems-event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.section-events .ems-event-image img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+}
+
+.section-events .ems-event-content {
+    padding: 24px;
+}
+
+.section-events .ems-event-date {
+    color: var(--color-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.section-events .ems-event-card h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--color-primary);
+    font-size: 1.125rem;
+    margin: 0 0 12px;
+}
+
+/* ==========================================================================
+   STATISTICS BAR
+   ========================================================================== */
+
+.section-stats {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+}
+
+.stat-value {
+    font-family: var(--font-heading);
+    margin-bottom: 4px !important;
+}
+
+.stat-label {
+    margin-top: 0 !important;
+}
+
+/* ==========================================================================
+   PROGRAM CARDS
+   ========================================================================== */
+
+.program-card {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    gap: 20px;
+}
+
+.program-card:hover {
+    border-color: transparent;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    transform: translateX(4px);
+}
+
+.program-icon {
+    flex-shrink: 0;
+    margin: 0 !important;
+}
+
+.program-card h3 {
+    color: var(--color-primary);
+    margin-bottom: 4px;
+}
+
+.program-card p:last-child {
+    color: var(--color-medium-gray);
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   TESTIMONIALS
+   ========================================================================== */
+
+.section-testimonials {
+    background-color: var(--color-light-gray);
+}
+
+.testimonial-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.quote-mark {
+    font-family: Georgia, serif;
+    opacity: 0.2;
+    margin-bottom: 0 !important;
+    line-height: 0.5 !important;
+}
+
+.testimonial-quote {
+    position: relative;
+    line-height: 1.8;
+    color: var(--color-dark-gray);
+}
+
+.testimonial-avatar {
+    margin: 0 !important;
+}
+
+/* ==========================================================================
+   CALL TO ACTION
+   ========================================================================== */
+
+.section-cta {
+    position: relative;
+}
+
+.section-cta .wp-block-cover__background {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%) !important;
+}
+
+.section-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(13, 148, 136, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(234, 88, 12, 0.1) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.section-cta .wp-block-cover__inner-container {
+    position: relative;
+    z-index: 2;
+}
+
+/* ==========================================================================
+   ABOUT PAGE STYLES
+   ========================================================================== */
+
+.about-hero .wp-block-cover__background {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%) !important;
+}
+
+/* Team Cards */
+.team-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.team-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   CUSTOM FOOTER (In-Page)
+   ========================================================================== */
+
+.custom-footer {
+    margin-top: auto;
+}
+
+.custom-footer a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.custom-footer a:hover {
+    color: #fff;
+}
+
+.custom-footer ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.custom-footer li {
+    margin-bottom: 8px;
+}
+
+.custom-footer .wp-block-social-links {
+    margin-top: 16px;
+}
+
+.custom-footer .wp-block-social-link a {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.custom-footer .wp-block-social-link a:hover {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+
+.wp-block-button__link {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 12px 24px;
+    transition: all 0.2s ease;
+}
+
+.wp-block-button__link:hover {
+    transform: translateY(-2px);
+}
+
+.wp-block-button__link.has-accent-background-color:hover {
+    background-color: var(--color-accent-dark) !important;
+    box-shadow: 0 8px 25px rgba(234, 88, 12, 0.3);
+}
+
+.wp-block-button__link.has-secondary-background-color:hover {
+    background-color: var(--color-secondary-dark) !important;
+    box-shadow: 0 8px 25px rgba(13, 148, 136, 0.3);
+}
+
+.wp-block-button__link.has-primary-background-color:hover {
+    background-color: var(--color-primary-light) !important;
+    box-shadow: 0 8px 25px rgba(26, 54, 93, 0.3);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+    .section-stats .wp-block-columns {
+        flex-wrap: wrap;
+    }
+    
+    .section-stats .wp-block-column {
+        flex-basis: 50% !important;
+        margin-bottom: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .homepage-hero {
+        min-height: 70vh !important;
+    }
+    
+    .hero-title {
+        font-size: 2rem !important;
+    }
+    
+    .homepage-hero .wp-block-buttons {
+        flex-direction: column;
+    }
+    
+    .homepage-hero .wp-block-button {
+        width: 100%;
+    }
+    
+    .homepage-hero .wp-block-button__link {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .section-stats .wp-block-column {
+        flex-basis: 100% !important;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem !important;
+    }
+    
+    .section-events .ems-upcoming-events {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.75rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem !important;
+    }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .value-card,
+    .program-card,
+    .testimonial-card,
+    .team-card,
+    .ems-event-card,
+    .wp-block-button__link {
+        transition: none !important;
+    }
+    
+    .value-card:hover,
+    .program-card:hover,
+    .testimonial-card:hover,
+    .team-card:hover,
+    .ems-event-card:hover,
+    .wp-block-button__link:hover {
+        transform: none !important;
+    }
+}
+
+/* Focus states for keyboard navigation */
+.wp-block-button__link:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+a:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
+
+@media print {
+    .homepage-hero,
+    .section-cta,
+    .about-hero {
+        background: var(--color-primary) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .section-stats {
+        background: var(--color-light-gray) !important;
+    }
+    
+    .stat-value,
+    .stat-label {
+        color: var(--color-primary) !important;
+    }
+}

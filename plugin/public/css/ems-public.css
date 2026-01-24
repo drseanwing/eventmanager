@@ -1,0 +1,820 @@
+/**
+ * Event Management System - Public Styles
+ * 
+ * Unified styling using CSS custom properties for seamless theme integration.
+ * When the Conference Starter theme is active, these styles automatically inherit
+ * the theme's design tokens. Otherwise, sensible defaults are provided.
+ *
+ * @package    EventManagementSystem
+ * @subpackage Public/CSS
+ * @since      2.0.0
+ * @version    2.0.0
+ */
+
+/* ==========================================================================
+   CSS Custom Properties - EMS Design Tokens
+   
+   These variables provide fallback values when not using the Conference Starter
+   theme. When the theme is active, these are overridden by theme variables.
+   ========================================================================== */
+
+:root {
+    /* Typography fallbacks (theme provides --font-body, --font-heading) */
+    --ems-font-body: var(--font-body, 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    --ems-font-heading: var(--font-heading, 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    --ems-font-size-base: var(--font-size-base, 14px);
+    --ems-font-size-small: var(--font-size-small, 13px);
+    --ems-line-height: var(--line-height-base, 1.7);
+    
+    /* Color fallbacks (theme provides --color-*) */
+    --ems-color-primary: var(--color-primary, #222222);
+    --ems-color-accent: var(--color-accent, #1EC6B6);
+    --ems-color-accent-blue: var(--color-accent-blue, #007bff);
+    --ems-color-text: var(--color-text, #444444);
+    --ems-color-text-light: var(--color-text-light, #666666);
+    --ems-color-text-dark: var(--color-text-dark, #222222);
+    --ems-color-text-white: var(--color-text-white, #ffffff);
+    --ems-color-background: var(--color-background, #ffffff);
+    --ems-color-background-alt: var(--color-background-alt, #f9f9f9);
+    --ems-color-border: var(--color-border, #dce0e0);
+    
+    /* Status colors */
+    --ems-color-success: var(--color-success, #388e3c);
+    --ems-color-warning: var(--color-warning, #f57c00);
+    --ems-color-error: var(--color-error, #d32f2f);
+    --ems-color-info: var(--color-info, #1976d2);
+    
+    /* Spacing fallbacks (theme provides --spacing-*) */
+    --ems-spacing-xs: var(--spacing-xs, 5px);
+    --ems-spacing-sm: var(--spacing-sm, 10px);
+    --ems-spacing-md: var(--spacing-md, 15px);
+    --ems-spacing-lg: var(--spacing-lg, 20px);
+    --ems-spacing-xl: var(--spacing-xl, 25px);
+    --ems-spacing-xxl: var(--spacing-xxl, 40px);
+    
+    /* Component fallbacks */
+    --ems-border-radius: var(--border-radius, 5px);
+    --ems-box-shadow: var(--box-shadow, 0 1px 30px rgba(0, 0, 0, 0.1));
+    --ems-box-shadow-hover: var(--box-shadow-hover, 0 4px 40px rgba(0, 0, 0, 0.15));
+    --ems-transition: var(--transition-base, 0.3s ease);
+    --ems-transition-fast: var(--transition-fast, 0.2s linear);
+}
+
+/* ==========================================================================
+   Base EMS Wrapper
+   ========================================================================== */
+
+.ems-wrapper {
+    font-family: var(--ems-font-body);
+    font-size: var(--ems-font-size-base);
+    line-height: var(--ems-line-height);
+    color: var(--ems-color-text);
+}
+
+/* ==========================================================================
+   Event List & Cards
+   ========================================================================== */
+
+.ems-event-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--ems-spacing-lg);
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-event-item,
+.ems-event-card {
+    background: var(--ems-color-background);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    box-shadow: var(--ems-box-shadow);
+    padding: var(--ems-spacing-xl);
+    transition: transform var(--ems-transition), box-shadow var(--ems-transition);
+}
+
+.ems-event-item:hover,
+.ems-event-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--ems-box-shadow-hover);
+}
+
+.ems-event-item h3,
+.ems-event-card h3 {
+    font-family: var(--ems-font-heading);
+    font-size: 1.25em;
+    font-weight: 500;
+    color: var(--ems-color-text-dark);
+    margin: 0 0 var(--ems-spacing-sm) 0;
+}
+
+.ems-event-item h3 a,
+.ems-event-card h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.ems-event-item h3 a:hover,
+.ems-event-card h3 a:hover {
+    color: var(--ems-color-accent);
+}
+
+.ems-event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-md);
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    margin-top: var(--ems-spacing-sm);
+}
+
+.ems-event-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ems-spacing-xs);
+}
+
+.ems-event-meta-item .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--ems-color-accent-blue);
+}
+
+/* Event Details Section (on single event pages) */
+.ems-event-details-section {
+    margin-bottom: var(--ems-spacing-xxl);
+}
+
+.ems-event-details-section .ems-event-meta {
+    background: var(--ems-color-background-alt);
+    padding: var(--ems-spacing-lg);
+    border-radius: var(--ems-border-radius);
+    margin-bottom: var(--ems-spacing-lg);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--ems-spacing-md);
+}
+
+.ems-event-details-section .ems-event-meta > div {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ems-spacing-xs);
+}
+
+.ems-event-details-section .ems-event-meta strong {
+    font-family: var(--ems-font-heading);
+    font-size: var(--ems-font-size-small);
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+.ems-form,
+.ems-registration-form,
+.ems-abstract-form,
+.ems-abstract-submission-form {
+    max-width: 700px;
+}
+
+.ems-form-group {
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-form-group label,
+.ems-form label {
+    display: block;
+    margin-bottom: var(--ems-spacing-xs);
+    font-family: var(--ems-font-heading);
+    font-size: var(--ems-font-size-small);
+    font-weight: 500;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-form-group label .required,
+.ems-form label .required {
+    color: var(--ems-color-error);
+}
+
+.ems-form-control,
+.ems-form input[type="text"],
+.ems-form input[type="email"],
+.ems-form input[type="url"],
+.ems-form input[type="password"],
+.ems-form input[type="tel"],
+.ems-form input[type="date"],
+.ems-form input[type="number"],
+.ems-form select,
+.ems-form textarea {
+    width: 100%;
+    padding: var(--ems-spacing-sm) var(--ems-spacing-md);
+    font-family: var(--ems-font-heading);
+    font-size: var(--ems-font-size-base);
+    line-height: 1.5;
+    color: var(--ems-color-text);
+    background: var(--ems-color-background);
+    border: 1px solid var(--ems-color-primary);
+    border-radius: var(--ems-border-radius);
+    outline: none;
+    transition: border-color var(--ems-transition), background var(--ems-transition);
+    -webkit-appearance: none;
+}
+
+.ems-form-control:focus,
+.ems-form input:focus,
+.ems-form select:focus,
+.ems-form textarea:focus {
+    background: var(--ems-color-background-alt);
+    border-color: var(--ems-color-accent);
+}
+
+.ems-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.ems-form-help {
+    display: block;
+    margin-top: var(--ems-spacing-xs);
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+}
+
+/* Form Row Layout */
+.ems-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--ems-spacing-md);
+}
+
+/* File Upload Styling */
+.ems-file-upload {
+    position: relative;
+    padding: var(--ems-spacing-lg);
+    border: 2px dashed var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    text-align: center;
+    background: var(--ems-color-background-alt);
+    transition: border-color var(--ems-transition), background var(--ems-transition);
+}
+
+.ems-file-upload:hover {
+    border-color: var(--ems-color-accent);
+}
+
+.ems-file-upload input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.ems-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ems-spacing-xs);
+    padding: 0.6em 2em;
+    font-family: var(--ems-font-heading);
+    font-size: var(--ems-font-size-base);
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 2px solid transparent;
+    border-radius: var(--ems-border-radius);
+    cursor: pointer;
+    outline: none;
+    transition: all var(--ems-transition-fast);
+    -webkit-appearance: none;
+}
+
+.ems-btn-primary {
+    color: var(--ems-color-text-white);
+    background: var(--ems-color-primary);
+    border-color: var(--ems-color-primary);
+}
+
+.ems-btn-primary:hover {
+    background: var(--ems-color-accent);
+    border-color: var(--ems-color-accent);
+    color: var(--ems-color-text-white);
+}
+
+.ems-btn-secondary {
+    color: var(--ems-color-text-light);
+    background: transparent;
+    border-color: var(--ems-color-text-light);
+}
+
+.ems-btn-secondary:hover {
+    color: var(--ems-color-text-white);
+    background: var(--ems-color-accent);
+    border-color: var(--ems-color-accent);
+}
+
+.ems-btn-accent {
+    color: var(--ems-color-text-white);
+    background: var(--ems-color-accent);
+    border-color: var(--ems-color-accent);
+}
+
+.ems-btn-accent:hover {
+    background: var(--ems-color-primary);
+    border-color: var(--ems-color-primary);
+}
+
+.ems-btn-danger {
+    color: var(--ems-color-text-white);
+    background: var(--ems-color-error);
+    border-color: var(--ems-color-error);
+}
+
+.ems-btn-danger:hover {
+    background: #c62828;
+    border-color: #c62828;
+}
+
+.ems-btn-success {
+    color: var(--ems-color-text-white);
+    background: var(--ems-color-success);
+    border-color: var(--ems-color-success);
+}
+
+.ems-btn-success:hover {
+    background: #2e7d32;
+    border-color: #2e7d32;
+}
+
+/* Button Sizes */
+.ems-btn-small {
+    font-size: var(--ems-font-size-small);
+    padding: 0.4em 1.2em;
+}
+
+.ems-btn-large {
+    font-size: 16px;
+    padding: 0.8em 2.5em;
+}
+
+/* Button States */
+.ems-btn:disabled,
+.ems-btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.ems-btn.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.ems-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-top: -8px;
+    margin-left: -8px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: ems-spin 0.6s linear infinite;
+}
+
+@keyframes ems-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Button Group */
+.ems-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-sm);
+}
+
+/* ==========================================================================
+   Notices & Messages
+   ========================================================================== */
+
+.ems-notice,
+.ems-error,
+.ems-success,
+.ems-warning,
+.ems-info {
+    padding: var(--ems-spacing-md) var(--ems-spacing-lg);
+    border-radius: var(--ems-border-radius);
+    margin-bottom: var(--ems-spacing-lg);
+    border-left: 4px solid;
+    font-size: var(--ems-font-size-base);
+}
+
+.ems-notice a,
+.ems-error a,
+.ems-success a,
+.ems-warning a,
+.ems-info a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.ems-notice,
+.ems-notice-info,
+.ems-info {
+    background: #e3f2fd;
+    color: #1565c0;
+    border-color: var(--ems-color-info);
+}
+
+.ems-error,
+.ems-notice-error {
+    background: #ffebee;
+    color: #c62828;
+    border-color: var(--ems-color-error);
+}
+
+.ems-success,
+.ems-notice-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-color: var(--ems-color-success);
+}
+
+.ems-warning,
+.ems-notice-warning {
+    background: #fff3e0;
+    color: #e65100;
+    border-color: var(--ems-color-warning);
+}
+
+/* ==========================================================================
+   Badges & Tags
+   ========================================================================== */
+
+.ems-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 15px;
+    white-space: nowrap;
+}
+
+.ems-badge-primary {
+    background: var(--ems-color-background-alt);
+    color: var(--ems-color-accent-blue);
+}
+
+.ems-badge-success {
+    background: #e8f5e9;
+    color: var(--ems-color-success);
+}
+
+.ems-badge-warning {
+    background: #fff3e0;
+    color: var(--ems-color-warning);
+}
+
+.ems-badge-error {
+    background: #ffebee;
+    color: var(--ems-color-error);
+}
+
+/* Session Type Badges */
+.ems-badge-keynote {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.ems-badge-workshop {
+    background: #e8f5e9;
+    color: var(--ems-color-success);
+}
+
+.ems-badge-panel {
+    background: #fff3e0;
+    color: var(--ems-color-warning);
+}
+
+.ems-badge-break {
+    background: #e0e0e0;
+    color: #616161;
+}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+.ems-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-table th,
+.ems-table td {
+    padding: var(--ems-spacing-sm) var(--ems-spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--ems-color-border);
+}
+
+.ems-table th {
+    font-family: var(--ems-font-heading);
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+    background: var(--ems-color-background-alt);
+}
+
+.ems-table tr:hover td {
+    background: var(--ems-color-background-alt);
+}
+
+/* ==========================================================================
+   Abstract Submission
+   ========================================================================== */
+
+.ems-abstract-submission-form h2 {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    margin-bottom: var(--ems-spacing-lg);
+    padding-bottom: var(--ems-spacing-md);
+    border-bottom: 2px solid var(--ems-color-accent);
+}
+
+/* Abstract Event Selection */
+.ems-abstract-event-selection h3 {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    margin-bottom: var(--ems-spacing-sm);
+}
+
+.ems-event-option {
+    padding: var(--ems-spacing-lg);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    background: var(--ems-color-background);
+    transition: border-color var(--ems-transition), box-shadow var(--ems-transition);
+}
+
+.ems-event-option:hover {
+    border-color: var(--ems-color-accent-blue);
+    box-shadow: var(--ems-box-shadow);
+}
+
+.ems-event-option h4 {
+    margin: 0 0 var(--ems-spacing-sm) 0;
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+}
+
+.ems-event-option h4 a {
+    color: var(--ems-color-text-dark);
+    text-decoration: none;
+}
+
+.ems-event-option h4 a:hover {
+    color: var(--ems-color-accent);
+}
+
+/* ==========================================================================
+   Presenter Dashboard
+   ========================================================================== */
+
+.ems-presenter-dashboard {
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-presenter-dashboard h2 {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-abstract-item {
+    background: var(--ems-color-background);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    padding: var(--ems-spacing-lg);
+    margin-bottom: var(--ems-spacing-md);
+    transition: box-shadow var(--ems-transition);
+}
+
+.ems-abstract-item:hover {
+    box-shadow: var(--ems-box-shadow);
+}
+
+.ems-abstract-item h3 {
+    font-family: var(--ems-font-heading);
+    font-size: 1.1em;
+    font-weight: 500;
+    margin: 0 0 var(--ems-spacing-sm) 0;
+}
+
+.ems-abstract-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ems-spacing-sm);
+    margin-top: var(--ems-spacing-sm);
+}
+
+/* Status-specific badges */
+.ems-status-pending {
+    background: #fff3e0;
+    color: var(--ems-color-warning);
+}
+
+.ems-status-approved {
+    background: #e8f5e9;
+    color: var(--ems-color-success);
+}
+
+.ems-status-rejected {
+    background: #ffebee;
+    color: var(--ems-color-error);
+}
+
+.ems-status-revision {
+    background: #e3f2fd;
+    color: var(--ems-color-info);
+}
+
+/* ==========================================================================
+   My Registrations
+   ========================================================================== */
+
+.ems-my-registrations {
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-registration-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-md);
+    padding: var(--ems-spacing-lg);
+    background: var(--ems-color-background);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    margin-bottom: var(--ems-spacing-md);
+    transition: box-shadow var(--ems-transition);
+}
+
+.ems-registration-item:hover {
+    box-shadow: var(--ems-box-shadow);
+}
+
+.ems-registration-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.ems-registration-info h4 {
+    margin: 0 0 var(--ems-spacing-xs) 0;
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+}
+
+.ems-registration-info h4 a {
+    color: var(--ems-color-text-dark);
+    text-decoration: none;
+}
+
+.ems-registration-info h4 a:hover {
+    color: var(--ems-color-accent);
+}
+
+.ems-registration-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-md);
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    margin-top: var(--ems-spacing-xs);
+}
+
+.ems-registration-actions {
+    display: flex;
+    gap: var(--ems-spacing-sm);
+}
+
+/* ==========================================================================
+   Empty States
+   ========================================================================== */
+
+.ems-empty-state,
+.ems-no-results,
+.ems-no-sessions {
+    text-align: center;
+    padding: var(--ems-spacing-xxl);
+    color: var(--ems-color-text-light);
+}
+
+.ems-empty-state h3 {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    color: var(--ems-color-text);
+    margin-bottom: var(--ems-spacing-sm);
+}
+
+.ems-empty-state p {
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.ems-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--ems-spacing-xxl);
+}
+
+.ems-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--ems-color-border);
+    border-top-color: var(--ems-color-accent);
+    border-radius: 50%;
+    animation: ems-spin 0.8s linear infinite;
+}
+
+/* Skeleton Loading */
+.ems-skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--ems-color-background-alt) 25%,
+        var(--ems-color-border) 50%,
+        var(--ems-color-background-alt) 75%
+    );
+    background-size: 200% 100%;
+    animation: ems-skeleton-loading 1.5s infinite;
+}
+
+@keyframes ems-skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .ems-event-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .ems-form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .ems-registration-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .ems-registration-actions {
+        justify-content: flex-start;
+    }
+    
+    .ems-btn-group {
+        flex-direction: column;
+    }
+    
+    .ems-btn-group .ems-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .ems-event-details-section .ems-event-meta {
+        grid-template-columns: 1fr;
+    }
+    
+    .ems-abstract-status {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

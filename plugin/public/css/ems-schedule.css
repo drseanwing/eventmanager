@@ -1,0 +1,729 @@
+/**
+ * Event Management System - Schedule Display Styles
+ *
+ * Unified styling for event schedules, sessions, and related components.
+ * Automatically integrates with Conference Starter theme design tokens.
+ *
+ * @package    EventManagementSystem
+ * @subpackage Public/CSS
+ * @since      2.0.0
+ * @version    2.0.0
+ */
+
+/* ==========================================================================
+   Schedule Wrapper & Container
+   ========================================================================== */
+
+.ems-schedule-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--ems-spacing-lg, 20px);
+}
+
+/* ==========================================================================
+   Filters and Search
+   ========================================================================== */
+
+.ems-schedule-filters {
+    display: flex;
+    gap: var(--ems-spacing-md, 15px);
+    margin-bottom: var(--ems-spacing-lg, 20px);
+    flex-wrap: wrap;
+}
+
+.ems-schedule-filters select,
+.ems-filter {
+    padding: var(--ems-spacing-sm, 10px) var(--ems-spacing-md, 15px);
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: var(--ems-font-size-base, 14px);
+    color: var(--ems-color-text, #444);
+    background: var(--ems-color-background, #fff);
+    border: 1px solid var(--ems-color-border, #dce0e0);
+    border-radius: var(--ems-border-radius, 5px);
+    min-width: 150px;
+    cursor: pointer;
+    transition: border-color var(--ems-transition, 0.3s ease);
+}
+
+.ems-schedule-filters select:focus,
+.ems-filter:focus {
+    border-color: var(--ems-color-accent, #1EC6B6);
+    outline: none;
+}
+
+.ems-schedule-search {
+    position: relative;
+    margin-bottom: var(--ems-spacing-lg, 20px);
+}
+
+.ems-search-input {
+    width: 100%;
+    padding: var(--ems-spacing-sm, 12px) var(--ems-spacing-xxl, 45px) var(--ems-spacing-sm, 12px) var(--ems-spacing-md, 15px);
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: var(--ems-font-size-base, 16px);
+    color: var(--ems-color-text, #444);
+    background: var(--ems-color-background, #fff);
+    border: 1px solid var(--ems-color-border, #dce0e0);
+    border-radius: var(--ems-border-radius, 5px);
+    transition: border-color var(--ems-transition, 0.3s ease);
+}
+
+.ems-search-input:focus {
+    border-color: var(--ems-color-accent, #1EC6B6);
+    outline: none;
+}
+
+.ems-schedule-search .dashicons {
+    position: absolute;
+    right: var(--ems-spacing-md, 15px);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ems-color-text-light, #666);
+}
+
+/* ==========================================================================
+   Schedule Day Headers
+   ========================================================================== */
+
+.ems-schedule-day,
+.schedule-day {
+    margin-bottom: var(--ems-spacing-lg, 20px);
+    box-shadow: var(--ems-box-shadow, 0 1px 30px rgba(0, 0, 0, 0.1));
+    border-radius: var(--ems-border-radius, 5px);
+    overflow: hidden;
+}
+
+.ems-schedule-day-header,
+.schedule-day-header {
+    background: var(--ems-color-accent-blue, var(--color-accent-blue, #007bff));
+    color: var(--ems-color-text-white, #fff);
+    padding: var(--ems-spacing-xl, 25px);
+}
+
+.ems-schedule-day-header h3,
+.ems-schedule-day-header h4,
+.schedule-day-header h3,
+.schedule-day-header h4 {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    color: var(--ems-color-text-white, #fff);
+    margin: 0;
+    font-weight: 500;
+}
+
+.ems-schedule-day-date,
+.schedule-day-date {
+    opacity: 0.9;
+    font-size: var(--ems-font-size-small, 13px);
+    margin-top: var(--ems-spacing-xs, 5px);
+}
+
+/* ==========================================================================
+   Session Cards
+   ========================================================================== */
+
+.ems-session-card {
+    background: var(--ems-color-background, #fff);
+    border: 1px solid var(--ems-color-border, #e0e0e0);
+    border-radius: var(--ems-border-radius, 8px);
+    padding: var(--ems-spacing-lg, 20px);
+    margin-bottom: var(--ems-spacing-md, 15px);
+    transition: box-shadow var(--ems-transition, 0.3s ease), transform var(--ems-transition, 0.3s ease);
+}
+
+.ems-session-card:hover {
+    box-shadow: var(--ems-box-shadow-hover, 0 4px 40px rgba(0, 0, 0, 0.15));
+    transform: translateY(-2px);
+}
+
+.ems-session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--ems-spacing-md, 15px);
+    gap: var(--ems-spacing-sm, 10px);
+}
+
+.ems-session-title,
+.session-title {
+    margin: 0;
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: 1.25em;
+    font-weight: 500;
+    color: var(--ems-color-text-dark, #222);
+    flex: 1;
+}
+
+.ems-session-title a,
+.session-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.ems-session-title a:hover,
+.session-title a:hover {
+    color: var(--ems-color-accent, #1EC6B6);
+}
+
+/* Session Type Badge */
+.ems-session-type,
+.session-type {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--ems-color-background-alt, #f9f9f9);
+    color: var(--ems-color-accent-blue, #007bff);
+    border-radius: 15px;
+    white-space: nowrap;
+}
+
+/* Session Type Color Variants */
+.ems-session-type-keynote .ems-session-type,
+.session-type.keynote {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.ems-session-type-workshop .ems-session-type,
+.session-type.workshop {
+    background: #e8f5e9;
+    color: var(--ems-color-success, #388e3c);
+}
+
+.ems-session-type-panel .ems-session-type,
+.session-type.panel {
+    background: #fff3e0;
+    color: var(--ems-color-warning, #f57c00);
+}
+
+.ems-session-type-break .ems-session-type,
+.session-type.break {
+    background: #e0e0e0;
+    color: #616161;
+}
+
+/* Session Meta Information */
+.ems-session-meta,
+.session-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-lg, 20px);
+    margin-bottom: var(--ems-spacing-md, 15px);
+    color: var(--ems-color-text-light, #666);
+    font-size: var(--ems-font-size-small, 14px);
+}
+
+.ems-session-meta > div,
+.session-meta > span {
+    display: flex;
+    align-items: center;
+    gap: var(--ems-spacing-xs, 5px);
+}
+
+.ems-session-meta .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--ems-color-accent-blue, #007bff);
+}
+
+.session-time {
+    font-weight: 600;
+    color: var(--ems-color-accent-blue, #007bff);
+}
+
+/* Session Description */
+.ems-session-description {
+    color: var(--ems-color-text, #555);
+    line-height: var(--ems-line-height, 1.6);
+    margin-bottom: var(--ems-spacing-md, 15px);
+}
+
+/* Session Footer */
+.ems-session-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--ems-spacing-md, 15px);
+    padding-top: var(--ems-spacing-md, 15px);
+    border-top: 1px solid var(--ems-color-border, #f0f0f0);
+    gap: var(--ems-spacing-md, 15px);
+}
+
+/* Capacity Indicators */
+.ems-session-capacity {
+    font-size: var(--ems-font-size-small, 14px);
+    font-weight: 500;
+}
+
+.capacity-available {
+    color: var(--ems-color-success, #388e3c);
+}
+
+.capacity-filling {
+    color: var(--ems-color-warning, #f57c00);
+}
+
+.capacity-almost-full {
+    color: var(--ems-color-error, #d32f2f);
+    font-weight: 600;
+}
+
+.capacity-full {
+    color: var(--ems-color-error, #d32f2f);
+    font-weight: 600;
+}
+
+.capacity-unlimited {
+    color: var(--ems-color-info, #1976d2);
+}
+
+/* ==========================================================================
+   Session Items (List View)
+   ========================================================================== */
+
+.session-item {
+    padding: var(--ems-spacing-xl, 25px);
+    background: var(--ems-color-background, #fff);
+    border-top: 1px solid var(--ems-color-border, #e1e1e1);
+}
+
+.session-item:first-of-type {
+    border-top: none;
+}
+
+.session-location {
+    border-top: 1px solid var(--ems-color-border, #e1e1e1);
+    margin-top: var(--ems-spacing-lg, 20px);
+    padding-top: var(--ems-spacing-lg, 20px);
+}
+
+.session-location-label {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: var(--ems-font-size-small, 13px);
+    color: var(--ems-color-accent, #1EC6B6);
+}
+
+/* ==========================================================================
+   Schedule Views
+   ========================================================================== */
+
+/* List View */
+.ems-schedule-list .ems-schedule-group {
+    margin-bottom: var(--ems-spacing-xxl, 40px);
+}
+
+.ems-schedule-group-title {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: 1.5em;
+    font-weight: 500;
+    color: var(--ems-color-text-dark, #222);
+    margin-bottom: var(--ems-spacing-lg, 20px);
+    padding-bottom: var(--ems-spacing-sm, 10px);
+    border-bottom: 2px solid var(--ems-color-accent-blue, #007bff);
+}
+
+/* Grid View */
+.ems-sessions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--ems-spacing-lg, 20px);
+}
+
+/* Timeline View */
+.ems-schedule-timeline {
+    position: relative;
+}
+
+.ems-timeline-day {
+    margin-bottom: var(--ems-spacing-xxl, 40px);
+}
+
+.ems-timeline-date {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: 1.375em;
+    font-weight: 500;
+    color: var(--ems-color-text-dark, #222);
+    margin-bottom: var(--ems-spacing-lg, 20px);
+}
+
+.ems-timeline-slot {
+    display: flex;
+    margin-bottom: var(--ems-spacing-lg, 20px);
+}
+
+.ems-timeline-time {
+    min-width: 100px;
+    font-weight: 600;
+    color: var(--ems-color-accent-blue, #007bff);
+    padding-top: var(--ems-spacing-xs, 5px);
+}
+
+.ems-timeline-content {
+    flex: 1;
+}
+
+/* ==========================================================================
+   Schedule Tabs
+   ========================================================================== */
+
+.schedule-tabs,
+.ems-schedule-tabs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    background: var(--ems-color-accent-blue, var(--color-accent-blue, #007bff));
+    border-radius: var(--ems-border-radius, 5px) var(--ems-border-radius, 5px) 0 0;
+}
+
+.schedule-tabs li,
+.ems-schedule-tabs li {
+    margin: 0;
+}
+
+.schedule-tabs a,
+.ems-schedule-tabs a {
+    display: block;
+    padding: var(--ems-spacing-xl, 25px);
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    color: var(--ems-color-text-white, #fff);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    transition: background var(--ems-transition-fast, 0.2s linear);
+}
+
+.schedule-tabs a:hover,
+.ems-schedule-tabs a:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.schedule-tabs .active a,
+.ems-schedule-tabs .active a {
+    background: var(--color-accent-pink, #FF2D55);
+    border-color: var(--color-accent-pink, #FF2D55);
+}
+
+/* ==========================================================================
+   Schedule Actions
+   ========================================================================== */
+
+.ems-schedule-actions {
+    margin-top: var(--ems-spacing-xl, 30px);
+    text-align: center;
+}
+
+/* ==========================================================================
+   Participant Schedule (My Schedule)
+   ========================================================================== */
+
+.ems-participant-schedule {
+    background: var(--ems-color-background, #fff);
+    border-radius: var(--ems-border-radius, 8px);
+    padding: var(--ems-spacing-xl, 30px);
+    box-shadow: var(--ems-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.ems-participant-session {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--ems-spacing-md, 15px);
+    border: 1px solid var(--ems-color-border, #e0e0e0);
+    border-radius: var(--ems-border-radius, 6px);
+    margin-bottom: var(--ems-spacing-md, 15px);
+    transition: background-color var(--ems-transition, 0.2s ease);
+}
+
+.ems-participant-session:hover {
+    background-color: var(--ems-color-background-alt, #f8f9fa);
+}
+
+.ems-session-info h4 {
+    margin: 0 0 var(--ems-spacing-sm, 10px) 0;
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: 1.125em;
+    color: var(--ems-color-text-dark, #222);
+}
+
+.ems-session-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-lg, 20px);
+    color: var(--ems-color-text-light, #666);
+    font-size: var(--ems-font-size-small, 14px);
+}
+
+.ems-my-schedule-actions {
+    margin-top: var(--ems-spacing-lg, 20px);
+    text-align: center;
+}
+
+/* All Schedules View (Multi-event) */
+.ems-all-schedules {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ems-spacing-xl, 30px);
+}
+
+.ems-event-schedule-block {
+    background: var(--ems-color-background, #fff);
+    border: 1px solid var(--ems-color-border, #e0e0e0);
+    border-radius: var(--ems-border-radius, 8px);
+    overflow: hidden;
+}
+
+.ems-event-schedule-header {
+    background: var(--ems-color-background-alt, #f5f5f5);
+    padding: var(--ems-spacing-lg, 20px);
+    border-bottom: 1px solid var(--ems-color-border, #e0e0e0);
+}
+
+.ems-event-schedule-header h3 {
+    margin: 0 0 var(--ems-spacing-sm, 10px);
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: 1.25em;
+    font-weight: 500;
+}
+
+.ems-event-schedule-header h3 a {
+    color: var(--ems-color-text-dark, #1d2327);
+    text-decoration: none;
+}
+
+.ems-event-schedule-header h3 a:hover {
+    color: var(--ems-color-accent-blue, #2271b1);
+}
+
+.ems-event-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-md, 15px);
+    font-size: var(--ems-font-size-small, 14px);
+    color: var(--ems-color-text-light, #666);
+}
+
+.ems-event-meta-info .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.ems-event-schedule-body {
+    padding: var(--ems-spacing-lg, 20px);
+}
+
+.ems-schedule-actions {
+    display: flex;
+    gap: var(--ems-spacing-sm, 10px);
+    margin-top: var(--ems-spacing-md, 15px);
+    padding-top: var(--ems-spacing-md, 15px);
+    border-top: 1px solid var(--ems-color-border, #eee);
+}
+
+.ems-no-sessions-registered,
+.ems-no-sessions {
+    color: var(--ems-color-text-light, #666);
+    font-style: italic;
+    margin: 0 0 var(--ems-spacing-md, 15px);
+}
+
+.ems-no-schedule {
+    text-align: center;
+    padding: var(--ems-spacing-xxl, 40px);
+    background: var(--ems-color-background-alt, #f9f9f9);
+    border-radius: var(--ems-border-radius, 8px);
+}
+
+/* ==========================================================================
+   Session Detail Page
+   ========================================================================== */
+
+.ems-session-detail {
+    background: var(--ems-color-background, #fff);
+    border-radius: var(--ems-border-radius, 8px);
+    padding: var(--ems-spacing-xl, 30px);
+    box-shadow: var(--ems-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.ems-session-detail .ems-session-title {
+    font-size: 1.75em;
+    margin-bottom: var(--ems-spacing-lg, 20px);
+}
+
+.ems-session-meta-detail {
+    background-color: var(--ems-color-background-alt, #f8f9fa);
+    padding: var(--ems-spacing-lg, 20px);
+    border-radius: var(--ems-border-radius, 6px);
+    margin: var(--ems-spacing-lg, 20px) 0;
+}
+
+.ems-meta-item {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: var(--ems-spacing-md, 15px);
+    padding: var(--ems-spacing-sm, 10px) 0;
+    border-bottom: 1px solid var(--ems-color-border, #e0e0e0);
+}
+
+.ems-meta-item:last-child {
+    border-bottom: none;
+}
+
+.ems-meta-label {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-weight: 600;
+    color: var(--ems-color-text-light, #555);
+}
+
+.ems-meta-value {
+    color: var(--ems-color-text-dark, #222);
+}
+
+.ems-session-description-detail {
+    margin: var(--ems-spacing-xl, 30px) 0;
+    line-height: var(--ems-line-height, 1.8);
+    color: var(--ems-color-text, #555);
+}
+
+.ems-session-description-detail h3 {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-size: 1.125em;
+    font-weight: 500;
+    margin-bottom: var(--ems-spacing-md, 15px);
+}
+
+.ems-session-actions {
+    margin-top: var(--ems-spacing-xl, 30px);
+    text-align: center;
+}
+
+/* ==========================================================================
+   Event Schedule Section (on single event page)
+   ========================================================================== */
+
+.ems-event-schedule-section {
+    margin-bottom: var(--ems-spacing-xl, 30px);
+}
+
+.ems-event-schedule-section h2 {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-weight: 500;
+    margin-bottom: var(--ems-spacing-lg, 20px);
+    padding-bottom: var(--ems-spacing-sm, 10px);
+    border-bottom: 2px solid var(--ems-color-accent, #1EC6B6);
+}
+
+/* Registration and Abstract Sections */
+.ems-event-registration-section,
+.ems-event-abstract-section {
+    margin-bottom: var(--ems-spacing-xl, 30px);
+    padding: var(--ems-spacing-lg, 20px);
+    background: var(--ems-color-background-alt, #f9f9f9);
+    border-radius: var(--ems-border-radius, 5px);
+}
+
+.ems-event-registration-section h2,
+.ems-event-abstract-section h2 {
+    font-family: var(--ems-font-heading, var(--font-heading, 'Poppins', sans-serif));
+    font-weight: 500;
+    font-size: 1.25em;
+    margin-bottom: var(--ems-spacing-md, 15px);
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .ems-schedule-filters {
+        flex-direction: column;
+    }
+
+    .ems-schedule-filters select {
+        width: 100%;
+    }
+
+    .ems-session-header {
+        flex-direction: column;
+        gap: var(--ems-spacing-sm, 10px);
+    }
+
+    .ems-session-meta {
+        flex-direction: column;
+        gap: var(--ems-spacing-sm, 10px);
+    }
+
+    .ems-session-footer {
+        flex-direction: column;
+        gap: var(--ems-spacing-md, 15px);
+        align-items: stretch;
+    }
+
+    .ems-sessions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ems-timeline-slot {
+        flex-direction: column;
+    }
+
+    .ems-timeline-time {
+        margin-bottom: var(--ems-spacing-sm, 10px);
+    }
+
+    .ems-participant-session {
+        flex-direction: column;
+        gap: var(--ems-spacing-md, 15px);
+        align-items: stretch;
+    }
+
+    .ems-meta-item {
+        grid-template-columns: 1fr;
+        gap: var(--ems-spacing-xs, 5px);
+    }
+    
+    /* Schedule Tabs Mobile */
+    .schedule-tabs,
+    .ems-schedule-tabs {
+        flex-direction: column;
+    }
+    
+    .schedule-tabs a,
+    .ems-schedule-tabs a {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        border-left: 3px solid transparent;
+    }
+    
+    .schedule-tabs .active a,
+    .ems-schedule-tabs .active a {
+        border-bottom-color: rgba(255, 255, 255, 0.2);
+        border-left-color: var(--color-accent-pink, #FF2D55);
+    }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+    .ems-schedule-filters,
+    .ems-schedule-search,
+    .ems-session-actions,
+    .ems-btn {
+        display: none !important;
+    }
+    
+    .ems-session-card,
+    .session-item {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
