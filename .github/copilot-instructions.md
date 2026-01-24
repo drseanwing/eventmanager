@@ -209,7 +209,7 @@ public function save_meta_box($post_id, $post) {
     }
     
     // Sanitize and save
-    $event_date = isset($_POST['ems_event_date']) ? sanitize_text_field($_POST['ems_event_date']) : '';
+    $event_date = isset($_POST['ems_event_date']) ? sanitize_text_field(wp_unslash($_POST['ems_event_date'])) : '';
     update_post_meta($post_id, '_ems_event_date', $event_date);
 }
 ```
@@ -281,13 +281,13 @@ if (!$validator->has_required_fields($data, array('first_name', 'last_name', 'em
 
 **Sanitization**:
 ```php
-// Always sanitize input
-$email = sanitize_email($_POST['email']);
-$first_name = sanitize_text_field($_POST['first_name']);
-$abstract_text = sanitize_textarea_field($_POST['abstract_text']);
+// Always sanitize input with wp_unslash() for POST data
+$email = sanitize_email(wp_unslash($_POST['email']));
+$first_name = sanitize_text_field(wp_unslash($_POST['first_name']));
+$abstract_text = sanitize_textarea_field(wp_unslash($_POST['abstract_text']));
 
 // For arrays
-$attendees = array_map('sanitize_text_field', $_POST['attendees']);
+$attendees = array_map('sanitize_text_field', wp_unslash($_POST['attendees']));
 ```
 
 **Escaping Output**:
