@@ -818,3 +818,318 @@
         align-items: flex-start;
     }
 }
+
+/* ==========================================================================
+   Sponsor Portal Styles (Phase 4)
+   ========================================================================== */
+
+.ems-sponsor-portal {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--ems-spacing-lg);
+}
+
+.ems-sponsor-header {
+    margin-bottom: var(--ems-spacing-xl);
+    padding-bottom: var(--ems-spacing-lg);
+    border-bottom: 2px solid var(--ems-color-border);
+}
+
+.ems-sponsor-header h1 {
+    margin: 0 0 var(--ems-spacing-sm) 0;
+    font-family: var(--ems-font-heading);
+    color: var(--ems-color-primary);
+}
+
+.ems-sponsor-description {
+    color: var(--ems-color-text-light);
+    margin: 0;
+}
+
+/* Statistics Dashboard */
+.ems-sponsor-statistics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--ems-spacing-md);
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-stat-card {
+    background: var(--ems-color-background-alt);
+    padding: var(--ems-spacing-lg);
+    border-radius: var(--ems-border-radius);
+    border: 1px solid var(--ems-color-border);
+    text-align: center;
+}
+
+.ems-stat-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: var(--ems-color-accent);
+    margin-bottom: var(--ems-spacing-xs);
+}
+
+.ems-stat-label {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Events Section */
+.ems-sponsor-events-section {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-sponsor-events-section h2 {
+    font-family: var(--ems-font-heading);
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-sponsor-events-list {
+    display: grid;
+    gap: var(--ems-spacing-lg);
+}
+
+.ems-sponsor-event-card {
+    background: var(--ems-color-background);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    padding: var(--ems-spacing-lg);
+    transition: box-shadow 0.3s ease;
+}
+
+.ems-sponsor-event-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ems-event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--ems-spacing-sm);
+}
+
+.ems-event-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+    color: var(--ems-color-primary);
+}
+
+.ems-sponsor-level-badge {
+    background: var(--ems-color-accent);
+    color: var(--ems-color-text-white);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: var(--ems-font-size-small);
+    font-weight: 600;
+}
+
+.ems-event-date {
+    margin: var(--ems-spacing-xs) 0;
+    color: var(--ems-color-text-light);
+}
+
+.ems-event-actions {
+    margin-top: var(--ems-spacing-md);
+}
+
+/* Files Section */
+.ems-event-files {
+    margin-top: var(--ems-spacing-lg);
+    padding-top: var(--ems-spacing-lg);
+    border-top: 1px solid var(--ems-color-border);
+}
+
+.ems-event-files h4 {
+    margin: 0 0 var(--ems-spacing-md) 0;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-file-upload-section {
+    background: var(--ems-color-background-alt);
+    padding: var(--ems-spacing-lg);
+    border-radius: var(--ems-border-radius);
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-file-upload-section h5 {
+    margin: 0 0 var(--ems-spacing-md) 0;
+    font-size: 1.1em;
+}
+
+.ems-sponsor-file-upload-form .ems-form-group {
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-sponsor-file-upload-form label {
+    display: block;
+    margin-bottom: var(--ems-spacing-xs);
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-sponsor-file-upload-form input[type="file"],
+.ems-sponsor-file-upload-form textarea {
+    width: 100%;
+    padding: var(--ems-spacing-sm);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+}
+
+.ems-field-help {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    margin: var(--ems-spacing-xs) 0 0 0;
+}
+
+.ems-upload-status {
+    margin-top: var(--ems-spacing-md);
+}
+
+/* Files Table */
+.ems-files-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--ems-color-background);
+}
+
+.ems-files-table th,
+.ems-files-table td {
+    padding: var(--ems-spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--ems-color-border);
+}
+
+.ems-files-table th {
+    background: var(--ems-color-background-alt);
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-files-table tr:hover {
+    background: var(--ems-color-background-alt);
+}
+
+.ems-files-table td small {
+    color: var(--ems-color-text-light);
+}
+
+/* Buttons */
+.ems-toggle-files,
+.ems-button {
+    display: inline-block;
+    padding: var(--ems-spacing-sm) var(--ems-spacing-md);
+    background: var(--ems-color-accent);
+    color: var(--ems-color-text-white);
+    border: none;
+    border-radius: var(--ems-border-radius);
+    cursor: pointer;
+    font-size: var(--ems-font-size-base);
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+}
+
+.ems-toggle-files:hover,
+.ems-button:hover {
+    background: var(--ems-color-accent-blue);
+}
+
+.ems-button-primary {
+    background: var(--ems-color-accent-blue);
+}
+
+.ems-button-primary:hover {
+    background: #0056b3;
+}
+
+.ems-button-small {
+    padding: 6px 12px;
+    font-size: var(--ems-font-size-small);
+}
+
+.ems-button-danger {
+    background: var(--ems-color-error);
+}
+
+.ems-button-danger:hover {
+    background: #b71c1c;
+}
+
+.ems-no-files,
+.ems-no-results {
+    color: var(--ems-color-text-light);
+    font-style: italic;
+    padding: var(--ems-spacing-md);
+    text-align: center;
+}
+
+/* Waitlist Option Styles */
+.ems-waitlist-option {
+    margin-top: var(--ems-spacing-sm);
+}
+
+.ems-waitlist-option label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.ems-waitlist-option input[type="checkbox"] {
+    width: auto;
+    margin-right: var(--ems-spacing-xs);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .ems-sponsor-statistics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .ems-event-header {
+        flex-direction: column;
+    }
+    
+    .ems-sponsor-level-badge {
+        margin-top: var(--ems-spacing-xs);
+    }
+    
+    .ems-files-table {
+        font-size: var(--ems-font-size-small);
+    }
+    
+    .ems-files-table th,
+    .ems-files-table td {
+        padding: var(--ems-spacing-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .ems-sponsor-statistics {
+        grid-template-columns: 1fr;
+    }
+    
+    .ems-files-table thead {
+        display: none;
+    }
+    
+    .ems-files-table tr {
+        display: block;
+        margin-bottom: var(--ems-spacing-md);
+        border: 1px solid var(--ems-color-border);
+        border-radius: var(--ems-border-radius);
+    }
+    
+    .ems-files-table td {
+        display: block;
+        text-align: right;
+        padding: var(--ems-spacing-xs) var(--ems-spacing-sm);
+        border-bottom: 1px dotted var(--ems-color-border);
+    }
+    
+    .ems-files-table td:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 600;
+        color: var(--ems-color-text-dark);
+    }
+}
