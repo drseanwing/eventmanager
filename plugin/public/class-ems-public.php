@@ -52,6 +52,10 @@ class EMS_Public {
 		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-schedule-shortcodes.php';
 		new EMS_Schedule_Shortcodes();
 
+		// Load sponsor portal shortcodes (Phase 4)
+		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-sponsor-shortcodes.php';
+		new EMS_Sponsor_Shortcodes();
+
 		// Add single event content filter
 		add_filter( 'the_content', array( $this, 'filter_single_event_content' ) );
 		
@@ -146,7 +150,7 @@ class EMS_Public {
 					elseif ( $max_capacity && $reg_count >= $max_capacity ) {
 						$registration_available = false;
 						$registration_status = __( 'This event is at full capacity.', 'event-management-system' );
-						// TODO: Could show waitlist option here
+						// Waitlist option is available in registration form
 					}
 				}
 			}
@@ -846,6 +850,20 @@ class EMS_Public {
 			       __( 'Event not found.', 'event-management-system' ) . '</div>';
 		}
 
+		// Check event capacity
+		global $wpdb;
+		$max_capacity = get_post_meta( $event_id, 'event_max_capacity', true );
+		$reg_count = 0;
+		$at_capacity = false;
+
+		if ( $max_capacity ) {
+			$reg_count = $wpdb->get_var( $wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}ems_registrations WHERE event_id = %d AND status = 'active'",
+				$event_id
+			) );
+			$at_capacity = ( $reg_count >= $max_capacity );
+		}
+
 		// Check if logged-in user is already registered
 		if ( is_user_logged_in() ) {
 			$current_user = wp_get_current_user();
@@ -974,11 +992,77 @@ class EMS_Public {
 					<input type="hidden" name="ticket_type" value="standard">
 				<?php endif; ?>
 				
+				<?php if ( $at_capacity ) : ?>
+				<div class="ems-form-group" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 20px;">
+					<div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+						<span style="font-size: 20px; color: #856404; margin-right: 10px;">⚠️</span>
+						<div>
+							<strong style="color: #856404;"><?php esc_html_e( 'Event at Full Capacity', 'event-management-system' ); ?></strong>
+							<p style="margin: 5px 0 0 0; color: #856404;">
+								<?php 
+								echo esc_html( sprintf(
+									__( 'This event has reached maximum capacity (%d/%d registrations).', 'event-management-system' ),
+									$reg_count,
+									$max_capacity
+								) );
+								?>
+							</p>
+						</div>
+					</div>
+					<div class="ems-waitlist-option">
+						<label style="display: flex; align-items: center; font-weight: normal; cursor: pointer;">
+							<input type="checkbox" name="join_waitlist" id="ems_join_waitlist" value="1" style="margin-right: 8px;">
+							<span><?php esc_html_e( 'Join the waitlist to be notified if a spot becomes available', 'event-management-system' ); ?></span>
+						</label>
+						<p class="description" style="margin: 8px 0 0 0; font-size: 12px; color: #856404;">
+							<?php esc_html_e( 'You will receive an email notification if a spot opens up. You can then complete your registration at that time.', 'event-management-system' ); ?>
+						</p>
+					</div>
+				</div>
+				<?php endif; ?>
+				
 				<div class="ems-form-actions" style="margin-top: 20px;">
-					<button type="submit" class="ems-btn ems-btn-primary"><?php esc_html_e( 'Complete Registration', 'event-management-system' ); ?></button>
+					<button type="submit" class="ems-btn ems-btn-primary">
+						<?php 
+						if ( $at_capacity ) {
+							esc_html_e( 'Join Waitlist', 'event-management-system' );
+						} else {
+							esc_html_e( 'Complete Registration', 'event-management-system' );
+						}
+						?>
+					</button>
 				</div>
 			</form>
 		</div>
+		
+		<?php if ( $at_capacity ) : ?>
+		<script type="text/javascript">
+		jQuery(document).ready(function($) {
+			var $form = $('#ems-registration-form');
+			var $submitBtn = $form.find('button[type="submit"]');
+			var $waitlistCheckbox = $('#ems_join_waitlist');
+			
+			// Initially disable submit if at capacity and waitlist not checked
+			$submitBtn.prop('disabled', true);
+			
+			// Enable submit when waitlist checkbox is checked
+			$waitlistCheckbox.on('change', function() {
+				$submitBtn.prop('disabled', !$(this).is(':checked'));
+			});
+			
+			// Update button text based on waitlist checkbox
+			$waitlistCheckbox.on('change', function() {
+				if ($(this).is(':checked')) {
+					$submitBtn.text('<?php echo esc_js( __( 'Join Waitlist', 'event-management-system' ) ); ?>');
+					$submitBtn.prop('disabled', false);
+				} else {
+					$submitBtn.text('<?php echo esc_js( __( 'Complete Registration', 'event-management-system' ) ); ?>');
+					$submitBtn.prop('disabled', true);
+				}
+			});
+		});
+		</script>
+		<?php endif; ?>
 		
 		<style>
 		.ems-form-group { margin-bottom: 15px; }
@@ -1459,5 +1543,33 @@ class EMS_Public {
 			$schedule_display->generate_personal_ical( $session_ids, $registration );
 			exit;
 		}
+	}
+
+	/**
+	 * Handle sponsor file downloads
+	 *
+	 * Processes download requests for sponsor files with access control.
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public function handle_sponsor_file_download() {
+		// Check if download request
+		if ( ! isset( $_GET['ems_download_sponsor_file'] ) ) {
+			return;
+		}
+
+		$file_id = absint( $_GET['ems_download_sponsor_file'] );
+		if ( ! $file_id ) {
+			wp_die( esc_html__( 'Invalid file ID', 'event-management-system' ) );
+		}
+
+		// Load sponsor portal
+		require_once EMS_PLUGIN_DIR . 'includes/collaboration/class-ems-sponsor-portal.php';
+		$sponsor_portal = new EMS_Sponsor_Portal();
+
+		// Trigger download
+		$sponsor_portal->download_sponsor_file( $file_id );
+		exit;
 	}
 }
