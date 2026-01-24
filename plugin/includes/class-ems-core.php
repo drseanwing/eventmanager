@@ -329,6 +329,9 @@ class EMS_Core {
 		// iCal export handler
 		$this->loader->add_action( 'template_redirect', $plugin_public, 'handle_ical_export' );
 
+		// Sponsor file download handler (Phase 4)
+		$this->loader->add_action( 'template_redirect', $plugin_public, 'handle_sponsor_file_download' );
+
 		// REST API endpoints
 		$this->loader->add_action( 'rest_api_init', $plugin_public, 'register_rest_routes' );
 	}

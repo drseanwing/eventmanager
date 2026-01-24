@@ -228,6 +228,38 @@ class EMS_Activator {
 			INDEX status_idx (status)
 		) $charset_collate;";
 
+		// Sponsor event associations table (Phase 4)
+		$sql_sponsor_events = "CREATE TABLE IF NOT EXISTS {$table_prefix}ems_sponsor_events (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			sponsor_id BIGINT UNSIGNED NOT NULL,
+			event_id BIGINT UNSIGNED NOT NULL,
+			sponsor_level VARCHAR(50) NULL,
+			created_at DATETIME NOT NULL,
+			UNIQUE KEY unique_sponsor_event (sponsor_id, event_id),
+			INDEX sponsor_idx (sponsor_id),
+			INDEX event_idx (event_id)
+		) $charset_collate;";
+
+		// Sponsor files table (Phase 4)
+		$sql_sponsor_files = "CREATE TABLE IF NOT EXISTS {$table_prefix}ems_sponsor_files (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			sponsor_id BIGINT UNSIGNED NOT NULL,
+			event_id BIGINT UNSIGNED NOT NULL,
+			user_id BIGINT UNSIGNED NOT NULL,
+			file_name VARCHAR(255) NOT NULL,
+			file_path VARCHAR(500) NOT NULL,
+			file_type VARCHAR(50) NOT NULL,
+			file_size BIGINT NOT NULL,
+			description TEXT NULL,
+			upload_date DATETIME NOT NULL,
+			visibility VARCHAR(20) DEFAULT 'private',
+			downloads INT DEFAULT 0,
+			INDEX sponsor_idx (sponsor_id),
+			INDEX event_idx (event_id),
+			INDEX user_idx (user_id),
+			INDEX upload_date_idx (upload_date)
+		) $charset_collate;";
+
 		// Require WordPress upgrade functionality
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -237,6 +269,8 @@ class EMS_Activator {
 		dbDelta( $sql_waitlist );
 		dbDelta( $sql_abstract_reviews );
 		dbDelta( $sql_notification_log );
+		dbDelta( $sql_sponsor_events );
+		dbDelta( $sql_sponsor_files );
 
 		// Run migrations for existing installations
 		self::run_migrations( $table_prefix );

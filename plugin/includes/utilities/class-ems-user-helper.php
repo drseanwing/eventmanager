@@ -517,7 +517,10 @@ Thank you,
 
 		// Sponsor portal
 		if ( in_array( 'ems_sponsor', $user->roles, true ) ) {
-			// TODO: Sponsor portal page (Phase 4)
+			$page_id = get_option( 'ems_page_sponsor_portal' );
+			if ( $page_id ) {
+				return get_permalink( $page_id );
+			}
 			return home_url();
 		}
 
