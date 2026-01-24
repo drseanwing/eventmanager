@@ -1,57 +1,92 @@
 # Conference Starter Theme - Build Status
 
-> **Last Updated:** 2026-01-23
+> **Last Updated:** 2026-01-24
 > **Version:** 2.2.0
-> **Status:** COMPLETE ✓
+> **Status:** IN PROGRESS - See Issues Below
 
 ## File Checklist
 
-### Core Files (15)
-- [x] style.css (43KB) - Complete design system, components, responsive
-- [x] functions.php (30KB) - Theme setup, helpers, enqueues, color palette
-- [x] header.php (5KB) - Sticky header, nav, mobile menu
-- [x] footer.php (7KB) - Enhanced 3-column layout, social links
-- [x] index.php (2KB) - Main template
-- [x] single.php (4KB) - Single post template
-- [x] page.php (2KB) - Page template
-- [x] archive.php (2KB) - Archive template
-- [x] search.php (3KB) - Search results
-- [x] 404.php (3KB) - Error page
-- [x] sidebar.php (300B) - Sidebar widget area
-- [x] searchform.php (1KB) - Custom search form
-- [x] comments.php (9KB) - Comments template
-- [x] screenshot.png - Theme preview
-- [x] README.md - Documentation
-- [x] HOMEPAGE-README.md - Homepage template documentation
+### Core Files
+| Status | File | Size | Notes |
+|--------|------|------|-------|
+| ❌ | style.css | 33KB | **MISSING** - Currently in plugin/ directory |
+| ✅ | functions.php | 30KB | Theme setup, helpers, enqueues, color palette |
+| ✅ | header.php | 5KB | Sticky header, nav, mobile menu |
+| ✅ | footer.php | 7KB | Enhanced 3-column layout, social links |
+| ✅ | index.php | 2KB | Main template |
+| ❌ | single.php | - | **MISSING** - Currently in plugin/ directory |
+| ✅ | page.php | 2KB | Page template |
+| ✅ | archive.php | 2KB | Archive template |
+| ❌ | search.php | - | **MISSING** - Currently in plugin/ directory |
+| ✅ | 404.php | 3KB | Error page |
+| ❌ | sidebar.php | - | **MISSING** - Currently in plugin/ directory |
+| ❌ | searchform.php | - | **MISSING** - Currently in plugin/ directory |
+| ✅ | comments.php | 9KB | Comments template |
+| ✅ | screenshot.png | - | Theme preview |
+| ✅ | README.md | - | Documentation |
+| ✅ | HOMEPAGE-README.md | - | Homepage template documentation |
 
-### Template Parts (5)
-- [x] template-parts/content.php (3KB) - Post content
-- [x] template-parts/content-none.php (3KB) - No results
-- [x] template-parts/content-search.php (4KB) - Search results
-- [x] template-parts/content-page.php - Page content
-- [x] template-parts/content-card.php - Card layout
+### Template Parts
+| Status | Directory/File | Notes |
+|--------|----------------|-------|
+| ❌ | template-parts/ | **MISSING** - Directory does not exist |
+| ❌ | template-parts/content.php | Not created |
+| ❌ | template-parts/content-none.php | Not created |
+| ❌ | template-parts/content-search.php | Not created |
+| ❌ | template-parts/content-page.php | Not created |
+| ❌ | template-parts/content-card.php | Not created |
 
-### Page Templates (3)
-- [x] homepage-template.php (27KB) - Legacy homepage template (Customizer-based)
-- [x] templates/homepage.php (27KB) - Same as above (dual location)
-- [x] templates/full-width.php (3KB) - Full-width layout
+### Page Templates
+| Status | File | Notes |
+|--------|------|-------|
+| ✅ | homepage-template.php | 27KB - At theme root (working) |
+| ❌ | templates/homepage.php | Not created (optional - use above) |
+| ❌ | templates/full-width.php | Not created |
 
-### Include Files (6)
-- [x] inc/customizer.php (23KB) - Full customizer with homepage settings
-- [x] inc/template-tags.php (12KB) - Template helpers
-- [x] inc/template-functions.php (10KB) - Theme functions
-- [x] inc/ems-integration.php (15KB) - EMS plugin integration
-- [x] inc/functions-homepage.php (5KB) - Homepage-specific functions
-- [x] inc/block-patterns.php (35KB) - **NEW** Gutenberg block patterns
+### EMS Integration Templates
+| Status | File | Notes |
+|--------|------|-------|
+| ❌ | single-event.php | **MISSING** - Currently in plugin/ems/ |
+| ❌ | archive-event.php | **MISSING** - Currently in plugin/ems/ |
+
+### Include Files (7)
+| Status | File | Notes |
+|--------|------|-------|
+| ✅ | inc/customizer.php | 23KB - Full customizer with homepage settings |
+| ✅ | inc/template-tags.php | 12KB - Template helpers |
+| ✅ | inc/template-functions.php | 10KB - Theme functions |
+| ✅ | inc/ems-integration.php | 15KB - EMS plugin integration |
+| ✅ | inc/functions-homepage.php | 5KB - Homepage-specific functions |
+| ✅ | inc/block-patterns.php | 35KB - Gutenberg block patterns |
+| ✅ | inc/page-options.php | - - Page options |
 
 ### Assets
-- [x] assets/js/main.js (21KB) - Main JavaScript
-- [x] assets/js/customizer.js - Customizer preview JS
-- [x] assets/js/homepage.js (6KB) - Homepage countdown, animations
-- [x] assets/css/ems-integration.css (18KB) - EMS styling
-- [x] assets/css/editor-style.css (12KB) - Gutenberg styles
-- [x] assets/css/homepage.css (28KB) - Homepage template styling
-- [x] assets/css/block-patterns.css (10KB) - **NEW** Block pattern styling
+| Status | File | Notes |
+|--------|------|-------|
+| ✅ | assets/js/main.js | 21KB - Main JavaScript |
+| ✅ | assets/js/customizer.js | - - Customizer preview JS |
+| ✅ | assets/js/homepage.js | 6KB - Homepage countdown, animations |
+| ✅ | assets/css/ems-integration.css | 18KB - EMS styling |
+| ✅ | assets/css/editor-style.css | 12KB - Gutenberg styles |
+| ✅ | assets/css/homepage.css | 28KB - Homepage template styling |
+| ✅ | assets/css/block-patterns.css | 10KB - Block pattern styling |
+
+---
+
+## Required Actions
+
+> **Note:** The issues below are summarized from the status tables above. See the tables for complete details.
+
+**To make theme functional:**
+1. Move style.css from `plugin/` to `theme/conference-starter/`
+2. Move single.php from `plugin/` to `theme/conference-starter/`
+3. Move search.php from `plugin/` to `theme/conference-starter/`
+4. Move searchform.php from `plugin/` to `theme/conference-starter/`
+5. Move sidebar.php from `plugin/` to `theme/conference-starter/`
+6. Move single-event.php from `plugin/ems/` to `theme/conference-starter/`
+7. Move archive-event.php from `plugin/ems/` to `theme/conference-starter/`
+
+---
 
 ## Block Patterns (v2.2.0)
 
@@ -78,26 +113,7 @@ Editable in the block editor - drag, drop, reorder:
 | Team Members Grid | Faculty/staff cards |
 | **Complete About Page Layout** | All sections combined |
 
-## How to Use Block Patterns
-
-1. Create a new Page
-2. Click the **+** (Add Block) button
-3. Click **Browse All** → **Patterns** tab
-4. Select **"Homepage Sections"** or **"Page Layouts"** category
-5. Click any pattern to insert it
-6. Edit text, images, colors directly in the editor
-7. Drag sections to reorder
-
-**For quick start:** Insert "Complete Homepage Layout" or "Complete About Page Layout"
-
-## Dynamic Events Integration
-
-The "Upcoming Events" pattern uses the EMS shortcode:
-```
-[ems_upcoming_events count="3" show_past="no"]
-```
-
-This automatically displays events from your Event Management System.
+---
 
 ## Color Palette
 
@@ -111,7 +127,13 @@ Available in block editor color pickers:
 - White: #ffffff
 - Black: #0f172a
 
+---
+
 ## Changelog
+
+### 2026-01-24
+- Audit identified missing files
+- Updated BUILD-STATUS.md with accurate status
 
 ### 2.2.0 (2026-01-23)
 - Added Gutenberg block patterns for homepage and about pages
