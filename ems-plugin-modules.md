@@ -7,6 +7,10 @@
 - `event-management-system/includes/schedule/`
 - `event-management-system/includes/files/`
 - `event-management-system/includes/notifications/`
+- `event-management-system/includes/collaboration/`
+
+**Last Updated:** January 2026  
+**Version:** 1.4.0 (UAT Release)
 
 ---
 

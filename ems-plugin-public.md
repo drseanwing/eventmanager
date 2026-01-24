@@ -5,6 +5,9 @@
 - `event-management-system/public/`
 - `event-management-system/public/shortcodes/`
 
+**Last Updated:** January 2026  
+**Version:** 1.4.0 (UAT Release)
+
 ---
 
 ## Table of Contents
@@ -12,8 +15,9 @@
 1. [Public Class](#public-class) - `class-ems-public.php` (56KB)
 2. [Abstract Shortcodes](#abstract-shortcodes) - `class-ems-abstract-shortcodes.php` (24KB)
 3. [Schedule Shortcodes](#schedule-shortcodes) - `class-ems-schedule-shortcodes.php` (20KB)
-4. [Public CSS](#public-css) - `ems-public.css`, `ems-schedule.css`
-5. [Public JS](#public-js) - `ems-public.js`, `ems-schedule.js`
+4. [Sponsor Shortcodes](#sponsor-shortcodes) - `class-ems-sponsor-shortcodes.php` (Phase 4)
+5. [Public CSS](#public-css) - `ems-public.css`, `ems-schedule.css`
+6. [Public JS](#public-js) - `ems-public.js`, `ems-schedule.js`
 
 ---
 

@@ -2,7 +2,8 @@
 
 **Document Purpose:** Core theme files for Conference Starter WordPress theme  
 **Production Path:** `conference-starter/`  
-**Theme Version:** 1.1.0
+**Theme Version:** 2.3.0 (UAT Release)  
+**Last Updated:** January 2026
 
 ---
 
@@ -29,9 +30,9 @@ Theme URI: https://github.com/yourusername/conference-starter
 Author: Royal Brisbane & Women's Hospital
 Author URI: https://www.health.qld.gov.au/rbwh
 Description: A modern, professional WordPress theme designed for conferences and events.
-Version: 1.1.0
-Requires at least: 5.9
-Tested up to: 6.4
+Version: 2.3.0
+Requires at least: 6.0
+Tested up to: 6.7
 Requires PHP: 7.4
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html

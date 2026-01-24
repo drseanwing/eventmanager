@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Theme version and constants
-define('CONFERENCE_STARTER_VERSION', '2.2.0');
+define('CONFERENCE_STARTER_VERSION', '2.3.0');
 define('CONFERENCE_STARTER_DIR', get_template_directory());
 define('CONFERENCE_STARTER_URI', get_template_directory_uri());
 
