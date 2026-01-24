@@ -25,11 +25,11 @@
 
 ```css
 /*
-Theme Name: Conference Starter
-Theme URI: https://github.com/yourusername/conference-starter
-Author: Royal Brisbane & Women's Hospital
-Author URI: https://www.health.qld.gov.au/rbwh
-Description: A modern, professional WordPress theme designed for conferences and events.
+Theme Name: Conference starter
+Theme URI: https://github.com/your-repo/conference-starter
+Author: Sean
+Author URI: https://mnresus.org
+Description: A clean, minimal conference and event theme based on the GrandConference design system. No bloat, no popups, no required plugins - just a solid foundation for conference and event websites. Fully compatible with EMS (Event Management System) plugin.
 Version: 2.3.0
 Requires at least: 6.0
 Tested up to: 6.7

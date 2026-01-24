@@ -36,7 +36,7 @@ The Event Management System provides a complete solution for event management in
 
 ## Requirements
 
-- **WordPress:** 5.8 or higher
+- **WordPress:** 6.0 or higher (theme requirement)
 - **PHP:** 7.4 or higher (8.0+ recommended)
 - **MySQL:** 5.7 or higher / MariaDB 10.3+
 
