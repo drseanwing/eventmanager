@@ -1,161 +1,214 @@
 # Event Management System (EMS)
 
-A comprehensive WordPress plugin and theme for managing conferences, courses, and seminars at the Royal Brisbane & Women's Hospital.
+A comprehensive WordPress plugin for managing events, conferences, sessions, registrations, abstract submissions, and sponsor collaboration.
 
-## Overview
+## Version
+- **Plugin Version:** 1.5.0
+- **Requires WordPress:** 5.8+
+- **Tested up to:** 6.4
+- **Requires PHP:** 7.4+
+- **License:** GPL v2 or later
 
-The Event Management System provides a complete solution for event management including:
+## Installation
 
-- **Event Registration** - Ticketing, promo codes, capacity management, and waitlists
-- **Abstract Submission** - Paper/poster submission with peer review workflow
-- **Schedule Builder** - Drag-and-drop schedule creation and display
-- **Sponsor Portal** - Sponsor file sharing and collaboration (Phase 4)
-- **Email Notifications** - Automated confirmations and reminders
+### Method 1: Download ZIP from GitHub (Recommended)
+1. Go to the [GitHub releases page](https://github.com/drseanwing/eventmanager/releases) or click **Code > Download ZIP**
+2. In WordPress admin, go to **Plugins > Add New > Upload Plugin**
+3. Choose the downloaded ZIP file and click **Install Now**
+4. Activate the plugin through **Plugins > Installed Plugins**
 
-## Repository Structure
+### Method 2: Manual Upload
+1. Download and extract the plugin
+2. Upload the `eventmanager` folder to `/wp-content/plugins/`
+3. Rename the folder to `event-management-system` (optional, for cleaner URLs)
+4. Activate the plugin through **Plugins > Installed Plugins**
+
+### Method 3: Git Clone (Development)
+```bash
+cd /path/to/wordpress/wp-content/plugins/
+git clone https://github.com/drseanwing/eventmanager.git event-management-system
+```
+
+## Features
+
+### Event Management
+- Create and manage events with full metadata (dates, location, venue, timezone)
+- Featured images and rich content
+- Event archives with filtering
+- iCal export for calendar integration
+
+### Session Scheduling
+- Multi-track session management
+- Session types: Keynote, Workshop, Panel, Presentation, Break
+- Location and speaker assignment
+- Capacity management with registration limits
+- Timeline, grid, and list views
+
+### Registration System
+- Event registration with custom fields
+- Session-specific registration
+- Capacity tracking and waitlists
+- User dashboard for managing registrations
+- Email notifications
+
+### Abstract Submission
+- Multi-step abstract submission workflow
+- File upload support (PDF, DOC, DOCX)
+- Review and approval workflow
+- Presenter dashboard
+- Status tracking (Pending, Approved, Rejected, Revision Requested)
+
+### Sponsor Collaboration (v1.5.0)
+- **Sponsor Onboarding**: 7-step self-service registration form (`[ems_sponsor_onboarding]`)
+- **Expression of Interest (EOI)**: 5-step event sponsorship application (`[ems_sponsor_eoi event_id="123"]`)
+- **Sponsor Portal**: Tabbed dashboard for sponsors to manage profile, files, and applications (`[ems_sponsor_portal]`)
+- **Sponsorship Levels**: Bronze, Silver, Gold, Platinum + custom levels with slot management
+- **Public Display Shortcodes**:
+  - `[ems_event_sponsors]` - Display sponsors grouped by level
+  - `[ems_sponsor_carousel]` - Auto-scrolling sponsor logo carousel
+  - `[ems_sponsor_gallery]` - CSS Grid sponsor gallery
+  - `[ems_sponsor_levels]` - Display available sponsorship levels with EOI links
+- **Email Notifications**: Automated emails for onboarding, EOI submission, approval/rejection
+- **Security**: ABN/ACN validation, rate limiting, audit logging, CSRF protection
+
+## Shortcodes
+
+### Event Shortcodes
+| Shortcode | Description | Attributes |
+|-----------|-------------|------------|
+| `[ems_event_list]` | Display event grid | `limit`, `show_past`, `columns` |
+| `[ems_upcoming_events]` | Compact upcoming events | `limit` |
+| `[ems_event_details]` | Single event details | `id` |
+
+### Schedule Shortcodes
+| Shortcode | Description | Attributes |
+|-----------|-------------|------------|
+| `[ems_schedule]` | Full event schedule | `event_id`, `view`, `group_by`, `show_filters`, `show_search` |
+| `[ems_my_schedule]` | User's registered sessions | `event_id` |
+| `[ems_session]` | Single session display | `id` |
+
+### Registration Shortcodes
+| Shortcode | Description | Attributes |
+|-----------|-------------|------------|
+| `[ems_registration_form]` | Registration form | `event_id` |
+| `[ems_my_registrations]` | User's registrations | - |
+
+### Abstract Shortcodes
+| Shortcode | Description | Attributes |
+|-----------|-------------|------------|
+| `[ems_abstract_submission]` | Abstract submission form | `event_id` |
+| `[ems_presenter_dashboard]` | Presenter abstract management | - |
+| `[ems_abstract_list]` | List abstracts (admin) | `event_id`, `status` |
+
+### Sponsor Shortcodes (v1.5.0)
+| Shortcode | Description | Attributes |
+|-----------|-------------|------------|
+| `[ems_sponsor_onboarding]` | Sponsor registration form | - |
+| `[ems_sponsor_eoi]` | EOI submission form | `event_id` (required) |
+| `[ems_sponsor_portal]` | Sponsor dashboard | - |
+| `[ems_event_sponsors]` | Display event sponsors | `event_id`, `show_logo`, `show_description`, `columns` |
+| `[ems_sponsor_carousel]` | Logo carousel | `event_id`, `speed`, `pause_on_hover` |
+| `[ems_sponsor_gallery]` | Sponsor gallery grid | `event_id`, `columns` |
+| `[ems_sponsor_levels]` | Available levels | `event_id`, `show_eoi_link` |
+
+## Custom Post Types
+
+| Post Type | Slug | Description |
+|-----------|------|-------------|
+| Events | `ems_event` | Main event entries |
+| Sessions | `ems_session` | Schedule sessions |
+| Registrations | `ems_registration` | Registration records |
+| Abstracts | `ems_abstract` | Abstract submissions |
+| Sponsors | `ems_sponsor` | Sponsor organizations |
+
+## Database Tables
+
+The plugin creates the following custom tables:
+- `{prefix}_ems_sponsorship_levels` - Sponsorship level definitions per event
+- `{prefix}_ems_sponsor_eoi` - Expression of Interest submissions
+
+## File Structure
 
 ```
-├── plugin/                     # EMS WordPress Plugin (v1.4.0)
-│   ├── includes/               # Core PHP classes
-│   ├── admin/                  # Admin interface
-│   └── public/                 # Frontend shortcodes & assets
-│
-├── theme/                      # Conference Starter Theme (v2.3.0)
-│   └── conference-starter/     # WordPress theme files
-│
-└── docs/                       # Documentation
-    ├── project-manifest.md     # Complete project structure
-    ├── BUILD-STATUS.md         # Build status and changelog
-    ├── ems-plugin-core.md      # Core plugin documentation
-    ├── ems-plugin-admin.md     # Admin module documentation
-    ├── ems-plugin-modules.md   # Feature modules documentation
-    ├── ems-plugin-public.md    # Frontend documentation
-    ├── theme-core.md           # Theme core documentation
-    └── theme-integration.md    # EMS-Theme integration docs
+event-management-system/
+├── admin/
+│   ├── css/                   # Admin stylesheets
+│   ├── js/                    # Admin JavaScript
+│   ├── views/                 # Admin page templates
+│   └── class-ems-admin.php    # Admin functionality
+├── includes/
+│   ├── class-ems-core.php     # Core plugin class
+│   ├── class-ems-activator.php
+│   ├── class-ems-deactivator.php
+│   ├── sponsor/               # Sponsor meta and levels
+│   ├── collaboration/         # Sponsor portal
+│   ├── forms/                 # Multi-step form framework
+│   ├── notifications/         # Email manager
+│   ├── custom-post-types/     # CPT definitions
+│   └── ...
+├── public/
+│   ├── css/ems-public.css     # Public styles
+│   ├── js/                    # Public JavaScript
+│   ├── shortcodes/            # All shortcode classes
+│   └── class-ems-public.php   # Public functionality
+├── templates/                 # Template files
+├── logs/                      # Log files (auto-created)
+├── event-management-system.php # Main plugin file
+└── README.md
 ```
 
 ## Requirements
 
-- **WordPress:** 6.0 or higher (theme requirement)
-- **PHP:** 7.4 or higher (8.0+ recommended)
-- **MySQL:** 5.7 or higher / MariaDB 10.3+
+- WordPress 5.8 or higher
+- PHP 7.4 or higher
+- MySQL 5.7 or higher
 
-## Installation
+## Documentation
 
-### Fresh Installation
+Detailed documentation is available in the `docs/` folder:
+- `SPONSORSHIP-DOCS.md` - Complete sponsorship subsystem documentation
+- `SPONSORSHIP-TESTING-GUIDE.md` - Testing procedures
+- `SPONSORSHIP-IMPLEMENTATION-PLAN.md` - Technical implementation details
 
-1. Download and upload `event-management-system/` to `/wp-content/plugins/`
-2. Download and upload `conference-starter/` to `/wp-content/themes/`
-3. Activate the plugin via **Plugins > Installed Plugins**
-4. Activate the theme via **Appearance > Themes**
-5. The plugin will create necessary database tables on activation
-6. Configure settings at **Events > Settings**
+## Changelog
 
-### Updating from Previous Version
+### 1.5.0
+- Added complete sponsor collaboration subsystem
+- New sponsor onboarding workflow (7-step form)
+- Expression of Interest (EOI) submission system
+- Sponsor portal with profile management
+- Sponsorship levels with slot tracking
+- 4 new public display shortcodes
+- 7 email notification templates
+- ABN/ACN validation for Australian businesses
+- Rate limiting and audit logging
+- WCAG 2.1 AA accessibility compliance
 
-1. Backup your database
-2. Replace plugin folder contents
-3. Database migrations run automatically on next page load
-4. Clear any caching plugins
+### 1.4.0
+- Added sponsor collaboration foundation
+- File upload system for sponsors
+- Sponsor portal shortcode
 
-## Features
+### 1.2.0
+- Unified CSS architecture with design token inheritance
+- Improved theme compatibility layer
+- Enhanced responsive design
+- Added print styles for schedules
+- Improved accessibility
 
-### Phase 1: Registration System
-- Event creation with custom fields
-- Ticket types with pricing
-- Promo codes and discounts
-- Capacity management
-- Registration confirmation emails
+### 1.1.0
+- Added abstract submission system
+- Added presenter dashboard
+- Improved registration workflow
+- Added session capacity management
 
-### Phase 2: Abstract Submission
-- Abstract submission form
-- File upload support
-- Presenter dashboard
-- Peer review assignment
-- Review scoring and recommendations
-
-### Phase 3: Schedule Builder
-- Drag-and-drop schedule interface
-- Room/time slot management
-- Session registration
-- Schedule display (list/grid/timeline views)
-- iCal export
-
-### Phase 4: Sponsor Portal & Waitlist (Current)
-- Sponsor file uploads and management
-- Sponsor-event associations
-- Download tracking and statistics
-- Enhanced waitlist display options
-- Automatic waitlist promotion
-
-## Shortcodes
-
-| Shortcode | Description |
-|-----------|-------------|
-| `[ems_event_list]` | Display events grid |
-| `[ems_upcoming_events]` | List upcoming events |
-| `[ems_registration_form event_id="X"]` | Event registration form |
-| `[ems_my_registrations]` | User's registrations |
-| `[ems_abstract_submission event_id="X"]` | Abstract submission form |
-| `[ems_presenter_dashboard]` | Presenter's abstracts |
-| `[ems_event_schedule event_id="X"]` | Event schedule display |
-| `[ems_my_schedule]` | User's session registrations |
-| `[ems_sponsor_portal]` | Sponsor portal dashboard |
-
-## Custom Post Types
-
-- **Events** (`ems_event`) - Main event posts
-- **Sessions** (`ems_session`) - Individual sessions within events
-- **Abstracts** (`ems_abstract`) - Submitted abstracts
-- **Sponsors** (`ems_sponsor`) - Sponsor organizations
-
-## User Roles
-
-- **Event Organizer** - Full event management
-- **Abstract Reviewer** - Review submitted abstracts
-- **Session Manager** - Manage sessions and schedules
-- **Sponsor** - Access sponsor portal
-- **Participant** - Register for events (default)
-
-## Database Tables
-
-The plugin creates these custom tables:
-
-- `wp_ems_registrations` - Event registrations
-- `wp_ems_session_registrations` - Session registrations
-- `wp_ems_waitlist` - Waitlist entries
-- `wp_ems_abstract_reviews` - Abstract review records
-- `wp_ems_notification_log` - Email notification history
-- `wp_ems_sponsor_events` - Sponsor-event associations
-- `wp_ems_sponsor_files` - Sponsor file records
-
-## Development
-
-### Version Information
-
-| Component | Version | Status |
-|-----------|---------|--------|
-| EMS Plugin | 1.4.0 | UAT Ready |
-| Conference Starter Theme | 2.3.0 | UAT Ready |
-
-### Documentation
-
-See the markdown files in the repository root for detailed documentation:
-
-- **project-manifest.md** - Complete project structure and file mapping
-- **BUILD-STATUS.md** - Current build status and changelog
-- **ems-plugin-*.md** - Plugin component documentation
-- **theme-*.md** - Theme documentation
+### 1.0.0
+- Initial release
 
 ## Support
 
-For issues and feature requests, please use the GitHub issue tracker.
+For plugin support, please [open an issue](https://github.com/drseanwing/eventmanager/issues) on GitHub.
 
 ## License
 
-- **Plugin:** GPL v2 or later
-- **Theme:** GNU General Public License v2 or later
-
-## Credits
-
-Developed for Royal Brisbane & Women's Hospital event management needs.
+This plugin is licensed under the GPL v2 or later.

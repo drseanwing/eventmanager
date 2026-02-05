@@ -1,0 +1,27 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Exclude these files/folders from GitHub zip downloads (export-ignore)
+# This ensures the zip is clean for WordPress plugin installation
+
+# Development/CI files
+.github export-ignore
+.omc export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+
+# Documentation (not needed for plugin operation)
+docs export-ignore
+
+# Tests (not needed for plugin operation)
+tests export-ignore
+
+# PHPUnit configuration
+phpunit.xml.dist export-ignore
+
+# Editor configs
+.editorconfig export-ignore
+.vscode export-ignore
+
+# Logs directory contents (keep directory structure)
+logs/*.log export-ignore

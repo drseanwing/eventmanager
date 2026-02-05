@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Event Management System
- * Plugin URI: https://github.com/yourusername/event-management-system
+ * Plugin URI: https://github.com/drseanwing/eventmanager
  * Description: Comprehensive event management system for conferences, courses, and seminars with registration, abstract submission, schedule building, and sponsor collaboration.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Royal Brisbane & Women's Hospital
  * Author URI: https://www.health.qld.gov.au/rbwh
  * License: GPL v2 or later
@@ -25,7 +25,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Current plugin version.
  * Start at version 1.0.0 and use SemVer - https://semver.org
  */
-define( 'EMS_VERSION', '1.4.0' );
+define( 'EMS_VERSION', '1.5.0' );
 
 /**
  * Plugin base directory path
