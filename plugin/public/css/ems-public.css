@@ -1533,3 +1533,618 @@
         width: 100%;
     }
 }
+
+/* ==========================================================================
+   Sponsor Level Pills (Phase 7)
+   ========================================================================== */
+
+.ems-sponsor-level-pill {
+    display: inline-block;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 20px;
+    white-space: nowrap;
+    line-height: 1.4;
+    vertical-align: middle;
+}
+
+/* Named level modifiers (fallbacks when inline styles not used) */
+.ems-sponsor-level-pill--bronze {
+    background-color: #CD7F32;
+    color: #ffffff;
+}
+
+.ems-sponsor-level-pill--silver {
+    background-color: #C0C0C0;
+    color: #333333;
+}
+
+.ems-sponsor-level-pill--gold {
+    background-color: #FFD700;
+    color: #333333;
+}
+
+.ems-sponsor-level-pill--platinum {
+    background-color: #E5E4E2;
+    color: #333333;
+}
+
+/* ==========================================================================
+   Event Sponsors Display (Phase 7 - Task 7.1)
+   ========================================================================== */
+
+.ems-event-sponsors {
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-event-sponsors__level-group {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-event-sponsors__level-header {
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-event-sponsors__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ems-spacing-lg);
+    align-items: center;
+}
+
+.ems-event-sponsors__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--ems-color-text);
+    transition: transform var(--ems-transition), opacity var(--ems-transition);
+    max-width: 180px;
+}
+
+.ems-event-sponsors__item:hover {
+    transform: translateY(-2px);
+    opacity: 0.85;
+}
+
+.ems-event-sponsors__logo {
+    width: 120px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--ems-spacing-xs);
+}
+
+.ems-event-sponsors__logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.ems-event-sponsors__name {
+    font-size: var(--ems-font-size-small);
+    text-align: center;
+    color: var(--ems-color-text-dark);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Sponsor Logo Carousel (Phase 7 - Task 7.2)
+   ========================================================================== */
+
+.ems-sponsor-carousel {
+    position: relative;
+    margin: var(--ems-spacing-lg) 0;
+    padding: 0 50px;
+    outline: none;
+}
+
+.ems-sponsor-carousel__track-wrapper {
+    overflow: hidden;
+}
+
+.ems-sponsor-carousel__track {
+    display: flex;
+    transition: transform 0.4s ease;
+}
+
+.ems-sponsor-carousel__slide {
+    flex: 0 0 16.6667%;
+    max-width: 16.6667%;
+    padding: var(--ems-spacing-sm);
+    box-sizing: border-box;
+}
+
+.ems-sponsor-carousel__slide a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    padding: var(--ems-spacing-sm);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    background: var(--ems-color-background);
+    transition: box-shadow var(--ems-transition), border-color var(--ems-transition);
+    text-decoration: none;
+}
+
+.ems-sponsor-carousel__slide a:hover {
+    box-shadow: var(--ems-box-shadow);
+    border-color: var(--ems-color-accent);
+}
+
+.ems-sponsor-carousel__slide img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.ems-sponsor-carousel__placeholder {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    text-align: center;
+    padding: var(--ems-spacing-sm);
+    word-break: break-word;
+}
+
+/* Carousel Navigation Arrows */
+.ems-sponsor-carousel__prev,
+.ems-sponsor-carousel__next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--ems-color-border);
+    border-radius: 50%;
+    background: var(--ems-color-background);
+    color: var(--ems-color-text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--ems-transition), border-color var(--ems-transition), color var(--ems-transition);
+    z-index: 2;
+    padding: 0;
+}
+
+.ems-sponsor-carousel__prev:hover,
+.ems-sponsor-carousel__next:hover {
+    background: var(--ems-color-accent);
+    border-color: var(--ems-color-accent);
+    color: var(--ems-color-text-white);
+}
+
+.ems-sponsor-carousel__prev:focus-visible,
+.ems-sponsor-carousel__next:focus-visible {
+    outline: 2px solid var(--ems-color-accent);
+    outline-offset: 2px;
+}
+
+.ems-sponsor-carousel__prev {
+    left: 0;
+}
+
+.ems-sponsor-carousel__next {
+    right: 0;
+}
+
+.ems-sponsor-carousel__arrow--dimmed {
+    opacity: 0.4;
+}
+
+/* Carousel Dot Indicators */
+.ems-sponsor-carousel__dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: var(--ems-spacing-md);
+}
+
+.ems-sponsor-carousel__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--ems-color-border);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: background var(--ems-transition), border-color var(--ems-transition);
+}
+
+.ems-sponsor-carousel__dot:hover {
+    border-color: var(--ems-color-accent);
+}
+
+.ems-sponsor-carousel__dot--active {
+    background: var(--ems-color-accent);
+    border-color: var(--ems-color-accent);
+}
+
+.ems-sponsor-carousel__dot:focus-visible {
+    outline: 2px solid var(--ems-color-accent);
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Sponsor Logo Gallery (Phase 7 - Task 7.3)
+   ========================================================================== */
+
+.ems-sponsor-gallery {
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-sponsor-gallery--grouped .ems-sponsor-gallery__level-section {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-sponsor-gallery__level-header {
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-sponsor-gallery__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--ems-gallery-columns, 4), 1fr);
+    gap: var(--ems-spacing-lg);
+}
+
+.ems-sponsor-gallery__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--ems-color-text);
+    padding: var(--ems-spacing-md);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    background: var(--ems-color-background);
+    transition: box-shadow var(--ems-transition), transform var(--ems-transition);
+}
+
+.ems-sponsor-gallery__item:hover {
+    box-shadow: var(--ems-box-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.ems-sponsor-gallery__logo {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--ems-spacing-sm);
+}
+
+.ems-sponsor-gallery__logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.ems-sponsor-gallery__logo--placeholder {
+    background: var(--ems-color-background-alt);
+    border-radius: var(--ems-border-radius);
+}
+
+.ems-sponsor-gallery__logo--placeholder span {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: var(--ems-color-text-light);
+}
+
+.ems-sponsor-gallery__name {
+    font-size: var(--ems-font-size-small);
+    font-weight: 500;
+    text-align: center;
+    color: var(--ems-color-text-dark);
+}
+
+/* ==========================================================================
+   Sponsorship Levels Cards (Phase 7 - Task 7.7)
+   ========================================================================== */
+
+.ems-sponsor-levels {
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-sponsor-levels__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--ems-spacing-lg);
+}
+
+.ems-sponsor-levels__card {
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    overflow: hidden;
+    background: var(--ems-color-background);
+    box-shadow: var(--ems-box-shadow);
+    transition: transform var(--ems-transition), box-shadow var(--ems-transition);
+}
+
+.ems-sponsor-levels__card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--ems-box-shadow-hover);
+}
+
+.ems-sponsor-levels__card--sold-out {
+    opacity: 0.75;
+}
+
+.ems-sponsor-levels__header {
+    padding: var(--ems-spacing-lg);
+    text-align: center;
+}
+
+.ems-sponsor-levels__name {
+    margin: 0;
+    font-family: var(--ems-font-heading);
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.ems-sponsor-levels__body {
+    padding: var(--ems-spacing-lg);
+    text-align: center;
+}
+
+.ems-sponsor-levels__value {
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-sponsor-levels__currency {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: var(--ems-spacing-xs);
+}
+
+.ems-sponsor-levels__amount {
+    font-size: 2.2em;
+    font-weight: 700;
+    color: var(--ems-color-text-dark);
+    font-family: var(--ems-font-heading);
+}
+
+.ems-sponsor-levels__slots {
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-sponsor-levels__slots-text {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+}
+
+.ems-sponsor-levels__sold-out-text {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-error);
+    font-weight: 600;
+}
+
+.ems-sponsor-levels__recognition {
+    margin-bottom: var(--ems-spacing-lg);
+    padding: var(--ems-spacing-md);
+    background: var(--ems-color-background-alt);
+    border-radius: var(--ems-border-radius);
+    text-align: left;
+}
+
+.ems-sponsor-levels__recognition p {
+    margin: 0;
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text);
+    line-height: 1.6;
+}
+
+.ems-sponsor-levels__action {
+    margin-top: var(--ems-spacing-md);
+}
+
+.ems-sponsor-levels__sold-out-badge {
+    font-size: 14px;
+    padding: 8px 20px;
+}
+
+/* ==========================================================================
+   Single Sponsor Template (Phase 7 - Task 7.4)
+   ========================================================================== */
+
+.ems-single-sponsor {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--ems-spacing-lg);
+}
+
+.ems-single-sponsor__header {
+    display: flex;
+    gap: var(--ems-spacing-xl);
+    align-items: flex-start;
+    margin-bottom: var(--ems-spacing-xxl);
+    padding-bottom: var(--ems-spacing-xl);
+    border-bottom: 2px solid var(--ems-color-border);
+}
+
+.ems-single-sponsor__logo {
+    flex: 0 0 200px;
+}
+
+.ems-single-sponsor__logo-img {
+    max-width: 200px;
+    max-height: 150px;
+    object-fit: contain;
+    border-radius: var(--ems-border-radius);
+}
+
+.ems-single-sponsor__title-wrap {
+    flex: 1;
+}
+
+.ems-single-sponsor__title {
+    margin: 0 0 var(--ems-spacing-md) 0;
+    font-family: var(--ems-font-heading);
+    font-size: 2em;
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-single-sponsor__website-link {
+    margin-top: var(--ems-spacing-sm);
+}
+
+.ems-single-sponsor__description,
+.ems-single-sponsor__events,
+.ems-single-sponsor__contact {
+    margin-bottom: var(--ems-spacing-xxl);
+}
+
+.ems-single-sponsor__description h2,
+.ems-single-sponsor__events h2,
+.ems-single-sponsor__contact h2 {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    margin: 0 0 var(--ems-spacing-md) 0;
+    padding-bottom: var(--ems-spacing-sm);
+    border-bottom: 2px solid var(--ems-color-accent);
+    font-size: 1.4em;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-single-sponsor__content {
+    line-height: 1.8;
+    color: var(--ems-color-text);
+}
+
+/* Events Sponsored List */
+.ems-single-sponsor__events-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ems-single-sponsor__event-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ems-spacing-sm);
+    padding: var(--ems-spacing-sm) 0;
+    border-bottom: 1px solid var(--ems-color-border);
+}
+
+.ems-single-sponsor__event-item:last-child {
+    border-bottom: none;
+}
+
+.ems-single-sponsor__event-item a {
+    color: var(--ems-color-text-dark);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.ems-single-sponsor__event-item a:hover {
+    color: var(--ems-color-accent);
+}
+
+/* Contact Details */
+.ems-single-sponsor__contact-details {
+    display: grid;
+    gap: var(--ems-spacing-md);
+}
+
+.ems-single-sponsor__contact-item {
+    display: flex;
+    gap: var(--ems-spacing-sm);
+}
+
+.ems-single-sponsor__contact-item strong {
+    flex: 0 0 80px;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-single-sponsor__contact-item a {
+    color: var(--ems-color-accent);
+    text-decoration: none;
+}
+
+.ems-single-sponsor__contact-item a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   Phase 7 Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    /* Carousel: 4 slides on tablet */
+    .ems-sponsor-carousel {
+        padding: 0 40px;
+    }
+
+    .ems-sponsor-carousel__prev,
+    .ems-sponsor-carousel__next {
+        width: 34px;
+        height: 34px;
+        font-size: 20px;
+    }
+
+    /* Gallery: max 2 columns on tablet */
+    .ems-sponsor-gallery__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Single sponsor: stack header */
+    .ems-single-sponsor__header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .ems-single-sponsor__logo {
+        flex: none;
+    }
+
+    /* Sponsor levels: single column */
+    .ems-sponsor-levels__grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Event sponsors: smaller logos */
+    .ems-event-sponsors__logo {
+        width: 90px;
+        height: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Carousel: 2 slides on mobile */
+    .ems-sponsor-carousel {
+        padding: 0 35px;
+    }
+
+    .ems-sponsor-carousel__prev,
+    .ems-sponsor-carousel__next {
+        width: 30px;
+        height: 30px;
+        font-size: 18px;
+    }
+
+    /* Gallery: single column on small mobile */
+    .ems-sponsor-gallery__grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Contact: stack */
+    .ems-single-sponsor__contact-item {
+        flex-direction: column;
+        gap: var(--ems-spacing-xs);
+    }
+
+    .ems-single-sponsor__contact-item strong {
+        flex: none;
+    }
+}

@@ -68,6 +68,21 @@ class EMS_Public {
 		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-sponsor-shortcodes.php';
 		new EMS_Sponsor_Shortcodes();
 
+		// Load sponsor onboarding shortcode (Phase 5)
+		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-sponsor-onboarding-shortcode.php';
+		new EMS_Sponsor_Onboarding_Shortcode();
+
+		// Load sponsor EOI shortcode (Phase 6)
+		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-sponsor-eoi-shortcode.php';
+		new EMS_Sponsor_EOI_Shortcode();
+
+		// Load sponsor public display shortcodes (Phase 7)
+		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-sponsor-display-shortcodes.php';
+		new EMS_Sponsor_Display_Shortcodes();
+
+		// Add single sponsor template filter (Phase 7)
+		add_filter( 'single_template', array( $this, 'sponsor_single_template' ) );
+
 		// Add single event content filter
 		add_filter( 'the_content', array( $this, 'filter_single_event_content' ) );
 		
@@ -1922,5 +1937,36 @@ class EMS_Public {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Load custom single template for the ems_sponsor post type.
+	 *
+	 * Uses the plugin's templates/single-ems_sponsor.php if the theme
+	 * does not provide its own override.
+	 *
+	 * @since 1.5.0
+	 * @param string $template The path to the current template.
+	 * @return string Modified template path.
+	 */
+	public function sponsor_single_template( $template ) {
+		global $post;
+
+		if ( ! $post || 'ems_sponsor' !== $post->post_type ) {
+			return $template;
+		}
+
+		// Allow theme override: look for single-ems_sponsor.php in theme.
+		$theme_template = locate_template( 'single-ems_sponsor.php' );
+		if ( $theme_template ) {
+			return $theme_template;
+		}
+
+		$plugin_template = EMS_PLUGIN_DIR . 'templates/single-ems_sponsor.php';
+		if ( file_exists( $plugin_template ) ) {
+			return $plugin_template;
+		}
+
+		return $template;
 	}
 }

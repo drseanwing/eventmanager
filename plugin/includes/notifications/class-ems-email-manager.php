@@ -1723,28 +1723,734 @@ class EMS_Email_Manager {
 		?>
 		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
 			<h2 style="color: #ff9800;">⏰ Event Reminder</h2>
-			
+
 			<p>Dear <?php echo esc_html( $data['first_name'] ); ?>,</p>
-			
+
 			<p>This is a friendly reminder that <strong><?php echo esc_html( $data['event_title'] ); ?></strong> is coming up!</p>
-			
+
 			<div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong>Event:</strong> <?php echo esc_html( $data['event_title'] ); ?></p>
 				<p style="margin: 5px 0;"><strong>Date:</strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $data['event_date'] ) ) ); ?></p>
 				<p style="margin: 5px 0;"><strong>Location:</strong> <?php echo esc_html( $data['location'] ); ?></p>
 			</div>
-			
+
 			<p><strong>Don't forget:</strong></p>
 			<ul>
 				<li>Plan your journey to arrive on time</li>
 				<li>Bring your confirmation email or registration details</li>
 				<li>Check the event schedule for session times</li>
 			</ul>
-			
+
 			<p>We look forward to seeing you at the event!</p>
-			
+
 			<p>Best regards,<br>
 			<?php echo esc_html( get_bloginfo( 'name' ) ); ?> Team</p>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	// ==========================================
+	// SPONSORSHIP EMAIL METHODS (PHASE 9)
+	// ==========================================
+
+	/**
+	 * Send sponsor onboarding confirmation email
+	 *
+	 * Sent when a new sponsor account is created.
+	 *
+	 * @since 1.5.0
+	 * @param int $sponsor_id Sponsor post ID.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_onboarding_confirmation( $sponsor_id ) {
+		try {
+			$sponsor = get_post( $sponsor_id );
+			if ( ! $sponsor ) {
+				return false;
+			}
+
+			// Get sponsor meta data
+			$contact_email = get_post_meta( $sponsor_id, 'contact_email', true );
+			$contact_name  = get_post_meta( $sponsor_id, 'contact_name', true );
+
+			if ( empty( $contact_email ) ) {
+				$this->logger->warning(
+					"No contact email found for sponsor ID: {$sponsor_id}",
+					EMS_Logger::CONTEXT_EMAIL
+				);
+				return false;
+			}
+
+			// Get sponsor user account if exists
+			$user_id = get_post_meta( $sponsor_id, 'user_id', true );
+			$user    = $user_id ? get_userdata( $user_id ) : null;
+
+			$to      = $contact_email;
+			$subject = sprintf(
+				__( 'Welcome to %s - Sponsor Account Created', 'event-management-system' ),
+				get_bloginfo( 'name' )
+			);
+
+			$message = $this->get_sponsor_onboarding_template( array(
+				'sponsor_name' => ! empty( $contact_name ) ? $contact_name : $sponsor->post_title,
+				'login_url'    => $user ? wp_login_url() : '',
+				'portal_url'   => home_url( '/sponsor-portal/' ),
+				'site_name'    => get_bloginfo( 'name' ),
+				'has_user'     => (bool) $user,
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_onboarding_confirmation', $sponsor_id, 'sponsor' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_onboarding_confirmation: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Send new sponsor admin notification
+	 *
+	 * Notifies admin when a new sponsor registers.
+	 *
+	 * @since 1.5.0
+	 * @param int $sponsor_id Sponsor post ID.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_onboarding_admin_notification( $sponsor_id ) {
+		try {
+			$sponsor = get_post( $sponsor_id );
+			if ( ! $sponsor ) {
+				return false;
+			}
+
+			$to      = get_option( 'admin_email' );
+			$subject = sprintf(
+				__( '[%s] New Sponsor Registration: %s', 'event-management-system' ),
+				get_bloginfo( 'name' ),
+				$sponsor->post_title
+			);
+
+			$message = $this->get_sponsor_onboarding_admin_template( array(
+				'sponsor_name'   => $sponsor->post_title,
+				'organisation'   => get_post_meta( $sponsor_id, 'organisation', true ),
+				'abn'            => get_post_meta( $sponsor_id, 'abn', true ),
+				'contact_email'  => get_post_meta( $sponsor_id, 'contact_email', true ),
+				'admin_edit_url' => admin_url( 'post.php?post=' . $sponsor_id . '&action=edit' ),
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_onboarding_admin', $sponsor_id, 'sponsor' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_onboarding_admin_notification: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Send EOI received confirmation
+	 *
+	 * Confirms that the EOI was received by the sponsor.
+	 *
+	 * @since 1.5.0
+	 * @param int $eoi_id EOI ID from database.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_eoi_confirmation( $eoi_id ) {
+		global $wpdb;
+
+		try {
+			$eoi = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ems_sponsor_eoi WHERE id = %d",
+					$eoi_id
+				)
+			);
+
+			if ( ! $eoi ) {
+				return false;
+			}
+
+			$sponsor = get_post( $eoi->sponsor_id );
+			$event   = get_post( $eoi->event_id );
+
+			if ( ! $sponsor || ! $event ) {
+				return false;
+			}
+
+			$contact_email = get_post_meta( $eoi->sponsor_id, 'contact_email', true );
+			$contact_name  = get_post_meta( $eoi->sponsor_id, 'contact_name', true );
+
+			if ( empty( $contact_email ) ) {
+				return false;
+			}
+
+			$to      = $contact_email;
+			$subject = sprintf(
+				__( 'EOI Received for %s', 'event-management-system' ),
+				$event->post_title
+			);
+
+			$message = $this->get_eoi_confirmation_template( array(
+				'sponsor_name'    => ! empty( $contact_name ) ? $contact_name : $sponsor->post_title,
+				'event_name'      => $event->post_title,
+				'preferred_level' => $eoi->preferred_level,
+				'submitted_date'  => $eoi->submitted_at,
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_eoi_confirmation', $eoi->event_id, 'event' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_eoi_confirmation: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Send EOI admin notification
+	 *
+	 * Notifies admin when a sponsor submits an EOI.
+	 *
+	 * @since 1.5.0
+	 * @param int $eoi_id EOI ID from database.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_eoi_admin_notification( $eoi_id ) {
+		global $wpdb;
+
+		try {
+			$eoi = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ems_sponsor_eoi WHERE id = %d",
+					$eoi_id
+				)
+			);
+
+			if ( ! $eoi ) {
+				return false;
+			}
+
+			$sponsor = get_post( $eoi->sponsor_id );
+			$event   = get_post( $eoi->event_id );
+
+			if ( ! $sponsor || ! $event ) {
+				return false;
+			}
+
+			$to      = get_option( 'admin_email' );
+			$subject = sprintf(
+				__( '[%s] New Sponsorship EOI: %s for %s', 'event-management-system' ),
+				get_bloginfo( 'name' ),
+				$sponsor->post_title,
+				$event->post_title
+			);
+
+			$admin_eoi_url = admin_url( 'admin.php?page=ems-sponsor-eoi&event_id=' . $eoi->event_id );
+
+			$message = $this->get_eoi_admin_notification_template( array(
+				'sponsor_name'    => $sponsor->post_title,
+				'event_name'      => $event->post_title,
+				'preferred_level' => $eoi->preferred_level,
+				'estimated_value' => $eoi->estimated_value,
+				'admin_eoi_url'   => $admin_eoi_url,
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_eoi_admin', $eoi->event_id, 'event' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_eoi_admin_notification: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Send EOI approved notification
+	 *
+	 * Notifies sponsor that their EOI has been approved.
+	 *
+	 * @since 1.5.0
+	 * @param int $eoi_id EOI ID from database.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_eoi_approved( $eoi_id ) {
+		global $wpdb;
+
+		try {
+			$eoi = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ems_sponsor_eoi WHERE id = %d",
+					$eoi_id
+				)
+			);
+
+			if ( ! $eoi ) {
+				return false;
+			}
+
+			$sponsor = get_post( $eoi->sponsor_id );
+			$event   = get_post( $eoi->event_id );
+
+			if ( ! $sponsor || ! $event ) {
+				return false;
+			}
+
+			// Get assigned level from sponsor_events meta
+			$sponsor_events = get_post_meta( $eoi->sponsor_id, 'sponsor_events', true );
+			if ( ! is_array( $sponsor_events ) ) {
+				$sponsor_events = array();
+			}
+
+			$assigned_level = isset( $sponsor_events[ $eoi->event_id ]['level'] )
+				? $sponsor_events[ $eoi->event_id ]['level']
+				: $eoi->preferred_level;
+
+			// Get level details
+			$levels_manager = new EMS_Sponsorship_Levels();
+			$level_details  = $levels_manager->get_level_by_slug( $eoi->event_id, $assigned_level );
+			$recognition    = $level_details ? $level_details->recognition_text : '';
+
+			$contact_email = get_post_meta( $eoi->sponsor_id, 'contact_email', true );
+			$contact_name  = get_post_meta( $eoi->sponsor_id, 'contact_name', true );
+
+			if ( empty( $contact_email ) ) {
+				return false;
+			}
+
+			$to      = $contact_email;
+			$subject = sprintf(
+				__( 'Sponsorship Approved: %s', 'event-management-system' ),
+				$event->post_title
+			);
+
+			$message = $this->get_eoi_approved_template( array(
+				'sponsor_name'     => ! empty( $contact_name ) ? $contact_name : $sponsor->post_title,
+				'event_name'       => $event->post_title,
+				'assigned_level'   => ucfirst( str_replace( '_', ' ', $assigned_level ) ),
+				'recognition_text' => $recognition,
+				'next_steps_url'   => home_url( '/sponsor-portal/' ),
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_eoi_approved', $eoi->event_id, 'event' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_eoi_approved: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Send EOI rejected notification
+	 *
+	 * Notifies sponsor that their EOI has been declined.
+	 *
+	 * @since 1.5.0
+	 * @param int    $eoi_id EOI ID from database.
+	 * @param string $reason Optional rejection reason.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_eoi_rejected( $eoi_id, $reason = '' ) {
+		global $wpdb;
+
+		try {
+			$eoi = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ems_sponsor_eoi WHERE id = %d",
+					$eoi_id
+				)
+			);
+
+			if ( ! $eoi ) {
+				return false;
+			}
+
+			$sponsor = get_post( $eoi->sponsor_id );
+			$event   = get_post( $eoi->event_id );
+
+			if ( ! $sponsor || ! $event ) {
+				return false;
+			}
+
+			$contact_email = get_post_meta( $eoi->sponsor_id, 'contact_email', true );
+			$contact_name  = get_post_meta( $eoi->sponsor_id, 'contact_name', true );
+
+			if ( empty( $contact_email ) ) {
+				return false;
+			}
+
+			// Use review_notes from EOI if no reason provided
+			if ( empty( $reason ) && ! empty( $eoi->review_notes ) ) {
+				$reason = $eoi->review_notes;
+			}
+
+			$to      = $contact_email;
+			$subject = sprintf(
+				__( 'Sponsorship Update: %s', 'event-management-system' ),
+				$event->post_title
+			);
+
+			$message = $this->get_eoi_rejected_template( array(
+				'sponsor_name'     => ! empty( $contact_name ) ? $contact_name : $sponsor->post_title,
+				'event_name'       => $event->post_title,
+				'rejection_reason' => $reason,
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_eoi_rejected', $eoi->event_id, 'event' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_eoi_rejected: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Send sponsorship level changed notification
+	 *
+	 * Notifies sponsor when their sponsorship level is updated.
+	 *
+	 * @since 1.5.0
+	 * @param int    $sponsor_id Sponsor post ID.
+	 * @param int    $event_id   Event post ID.
+	 * @param string $old_level  Old level slug.
+	 * @param string $new_level  New level slug.
+	 * @return bool True if sent successfully.
+	 */
+	public function send_level_changed( $sponsor_id, $event_id, $old_level, $new_level ) {
+		try {
+			$sponsor = get_post( $sponsor_id );
+			$event   = get_post( $event_id );
+
+			if ( ! $sponsor || ! $event ) {
+				return false;
+			}
+
+			$contact_email = get_post_meta( $sponsor_id, 'contact_email', true );
+			$contact_name  = get_post_meta( $sponsor_id, 'contact_name', true );
+
+			if ( empty( $contact_email ) ) {
+				return false;
+			}
+
+			$to      = $contact_email;
+			$subject = sprintf(
+				__( 'Sponsorship Level Update: %s', 'event-management-system' ),
+				$event->post_title
+			);
+
+			$message = $this->get_level_changed_template( array(
+				'sponsor_name' => ! empty( $contact_name ) ? $contact_name : $sponsor->post_title,
+				'event_name'   => $event->post_title,
+				'old_level'    => ucfirst( str_replace( '_', ' ', $old_level ) ),
+				'new_level'    => ucfirst( str_replace( '_', ' ', $new_level ) ),
+			) );
+
+			return $this->send_email( $to, $subject, $message, 'sponsor_level_changed', $event_id, 'event' );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in send_level_changed: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_EMAIL
+			);
+			return false;
+		}
+	}
+
+	// ==========================================
+	// SPONSORSHIP EMAIL TEMPLATES
+	// ==========================================
+
+	/**
+	 * Get sponsor onboarding confirmation template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_sponsor_onboarding_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #2c3e50;">Welcome to <?php echo esc_html( $data['site_name'] ); ?>!</h2>
+
+			<p>Dear <?php echo esc_html( $data['sponsor_name'] ); ?>,</p>
+
+			<p>Thank you for becoming a sponsor with <strong><?php echo esc_html( $data['site_name'] ); ?></strong>. Your sponsor account has been successfully created.</p>
+
+			<div style="background-color: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Next Steps:', 'event-management-system' ); ?></strong></p>
+				<ul style="margin: 10px 0;">
+					<?php if ( $data['has_user'] ) : ?>
+					<li><?php echo esc_html__( 'Log in to your account to access the sponsor portal', 'event-management-system' ); ?></li>
+					<?php endif; ?>
+					<li><?php echo esc_html__( 'Browse available events and express interest', 'event-management-system' ); ?></li>
+					<li><?php echo esc_html__( 'Submit your sponsorship EOI (Expression of Interest)', 'event-management-system' ); ?></li>
+					<li><?php echo esc_html__( 'Track your sponsorships and upload materials', 'event-management-system' ); ?></li>
+				</ul>
+			</div>
+
+			<?php if ( $data['has_user'] ) : ?>
+			<div style="margin: 30px 0;">
+				<a href="<?php echo esc_url( $data['login_url'] ); ?>" style="background-color: #2196f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+					<?php echo esc_html__( 'Log In to Your Account', 'event-management-system' ); ?>
+				</a>
+			</div>
+			<?php endif; ?>
+
+			<div style="margin: 30px 0;">
+				<a href="<?php echo esc_url( $data['portal_url'] ); ?>" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+					<?php echo esc_html__( 'Visit Sponsor Portal', 'event-management-system' ); ?>
+				</a>
+			</div>
+
+			<p><?php echo esc_html__( 'If you have any questions about the sponsorship process, please contact us.', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'Best regards,', 'event-management-system' ); ?><br>
+			<?php echo esc_html( $data['site_name'] ); ?> <?php echo esc_html__( 'Team', 'event-management-system' ); ?></p>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get sponsor onboarding admin notification template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_sponsor_onboarding_admin_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #2c3e50;"><?php echo esc_html__( 'New Sponsor Registration', 'event-management-system' ); ?></h2>
+
+			<p><?php echo esc_html__( 'A new sponsor has registered on your site.', 'event-management-system' ); ?></p>
+
+			<div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6c757d; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Sponsor Name:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['sponsor_name'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Organisation:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['organisation'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'ABN:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['abn'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Contact Email:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['contact_email'] ); ?></p>
+			</div>
+
+			<div style="margin: 30px 0;">
+				<a href="<?php echo esc_url( $data['admin_edit_url'] ); ?>" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+					<?php echo esc_html__( 'Review Sponsor Details', 'event-management-system' ); ?>
+				</a>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get EOI confirmation template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_eoi_confirmation_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #28a745;"><?php echo esc_html__( 'EOI Received', 'event-management-system' ); ?></h2>
+
+			<p>Dear <?php echo esc_html( $data['sponsor_name'] ); ?>,</p>
+
+			<p><?php echo esc_html__( 'Thank you for submitting your Expression of Interest for', 'event-management-system' ); ?> <strong><?php echo esc_html( $data['event_name'] ); ?></strong>.</p>
+
+			<div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Event:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['event_name'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Preferred Level:', 'event-management-system' ); ?></strong> <?php echo esc_html( ucfirst( str_replace( '_', ' ', $data['preferred_level'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $data['submitted_date'] ) ) ); ?></p>
+			</div>
+
+			<p><strong><?php echo esc_html__( 'What Happens Next:', 'event-management-system' ); ?></strong></p>
+			<ul>
+				<li><?php echo esc_html__( 'Our team will review your EOI within 5-7 business days', 'event-management-system' ); ?></li>
+				<li><?php echo esc_html__( 'We may contact you if additional information is needed', 'event-management-system' ); ?></li>
+				<li><?php echo esc_html__( 'You will receive an email with our decision', 'event-management-system' ); ?></li>
+			</ul>
+
+			<p><?php echo esc_html__( 'Thank you for your interest in supporting our event.', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'Best regards,', 'event-management-system' ); ?><br>
+			<?php echo esc_html( get_bloginfo( 'name' ) ); ?> <?php echo esc_html__( 'Team', 'event-management-system' ); ?></p>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get EOI admin notification template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_eoi_admin_notification_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #2c3e50;"><?php echo esc_html__( 'New Sponsorship EOI', 'event-management-system' ); ?></h2>
+
+			<p><?php echo esc_html__( 'A sponsor has submitted an Expression of Interest for one of your events.', 'event-management-system' ); ?></p>
+
+			<div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6c757d; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Sponsor:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['sponsor_name'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Event:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['event_name'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Preferred Level:', 'event-management-system' ); ?></strong> <?php echo esc_html( ucfirst( str_replace( '_', ' ', $data['preferred_level'] ) ) ); ?></p>
+				<?php if ( ! empty( $data['estimated_value'] ) ) : ?>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Estimated Value:', 'event-management-system' ); ?></strong> $<?php echo esc_html( number_format( $data['estimated_value'], 2 ) ); ?></p>
+				<?php endif; ?>
+			</div>
+
+			<div style="margin: 30px 0;">
+				<a href="<?php echo esc_url( $data['admin_eoi_url'] ); ?>" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+					<?php echo esc_html__( 'Review EOI', 'event-management-system' ); ?>
+				</a>
+			</div>
+
+			<p><?php echo esc_html__( 'Please review and respond to this EOI at your earliest convenience.', 'event-management-system' ); ?></p>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get EOI approved template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_eoi_approved_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #28a745;">🎉 <?php echo esc_html__( 'Sponsorship Approved!', 'event-management-system' ); ?></h2>
+
+			<p>Dear <?php echo esc_html( $data['sponsor_name'] ); ?>,</p>
+
+			<p><?php echo esc_html__( 'Great news! Your sponsorship application for', 'event-management-system' ); ?> <strong><?php echo esc_html( $data['event_name'] ); ?></strong> <?php echo esc_html__( 'has been approved.', 'event-management-system' ); ?></p>
+
+			<div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Event:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['event_name'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Sponsorship Level:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['assigned_level'] ); ?></p>
+			</div>
+
+			<?php if ( ! empty( $data['recognition_text'] ) ) : ?>
+			<div style="background-color: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Recognition Benefits:', 'event-management-system' ); ?></strong></p>
+				<p style="margin: 10px 0; white-space: pre-line;"><?php echo esc_html( $data['recognition_text'] ); ?></p>
+			</div>
+			<?php endif; ?>
+
+			<p><strong><?php echo esc_html__( 'Next Steps:', 'event-management-system' ); ?></strong></p>
+			<ul>
+				<li><?php echo esc_html__( 'Visit the sponsor portal to upload your logo and materials', 'event-management-system' ); ?></li>
+				<li><?php echo esc_html__( 'Review and confirm the sponsorship agreement', 'event-management-system' ); ?></li>
+				<li><?php echo esc_html__( 'Track event updates and communications', 'event-management-system' ); ?></li>
+			</ul>
+
+			<div style="margin: 30px 0;">
+				<a href="<?php echo esc_url( $data['next_steps_url'] ); ?>" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+					<?php echo esc_html__( 'Access Sponsor Portal', 'event-management-system' ); ?>
+				</a>
+			</div>
+
+			<p><?php echo esc_html__( 'We look forward to working with you on this event!', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'Best regards,', 'event-management-system' ); ?><br>
+			<?php echo esc_html( get_bloginfo( 'name' ) ); ?> <?php echo esc_html__( 'Team', 'event-management-system' ); ?></p>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get EOI rejected template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_eoi_rejected_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #6c757d;"><?php echo esc_html__( 'Sponsorship Update', 'event-management-system' ); ?></h2>
+
+			<p>Dear <?php echo esc_html( $data['sponsor_name'] ); ?>,</p>
+
+			<p><?php echo esc_html__( 'Thank you for your interest in sponsoring', 'event-management-system' ); ?> <strong><?php echo esc_html( $data['event_name'] ); ?></strong>.</p>
+
+			<p><?php echo esc_html__( 'After careful consideration, we are unable to accept your sponsorship proposal at this time.', 'event-management-system' ); ?></p>
+
+			<?php if ( ! empty( $data['rejection_reason'] ) ) : ?>
+			<div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6c757d; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Additional Information:', 'event-management-system' ); ?></strong></p>
+				<p style="margin: 10px 0; white-space: pre-line;"><?php echo esc_html( $data['rejection_reason'] ); ?></p>
+			</div>
+			<?php endif; ?>
+
+			<p><?php echo esc_html__( 'We appreciate your interest in supporting our events and encourage you to consider future opportunities with us. We will keep your details on file for upcoming events that may be a better fit.', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'If you have any questions or would like to discuss alternative sponsorship opportunities, please feel free to contact us.', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'Best regards,', 'event-management-system' ); ?><br>
+			<?php echo esc_html( get_bloginfo( 'name' ) ); ?> <?php echo esc_html__( 'Team', 'event-management-system' ); ?></p>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get sponsorship level changed template
+	 *
+	 * @since 1.5.0
+	 * @param array $data Template data.
+	 * @return string HTML email content.
+	 */
+	private function get_level_changed_template( $data ) {
+		ob_start();
+		?>
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #2196f3;"><?php echo esc_html__( 'Sponsorship Level Update', 'event-management-system' ); ?></h2>
+
+			<p>Dear <?php echo esc_html( $data['sponsor_name'] ); ?>,</p>
+
+			<p><?php echo esc_html__( 'Your sponsorship level for', 'event-management-system' ); ?> <strong><?php echo esc_html( $data['event_name'] ); ?></strong> <?php echo esc_html__( 'has been updated.', 'event-management-system' ); ?></p>
+
+			<div style="background-color: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;">
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Previous Level:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['old_level'] ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'New Level:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['new_level'] ); ?></p>
+			</div>
+
+			<p><?php echo esc_html__( 'This change may affect your recognition benefits and sponsorship entitlements. Please visit the sponsor portal to review your updated benefits package.', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'If you have any questions about this change, please contact us.', 'event-management-system' ); ?></p>
+
+			<p><?php echo esc_html__( 'Best regards,', 'event-management-system' ); ?><br>
+			<?php echo esc_html( get_bloginfo( 'name' ) ); ?> <?php echo esc_html__( 'Team', 'event-management-system' ); ?></p>
 		</div>
 		<?php
 		return ob_get_clean();
