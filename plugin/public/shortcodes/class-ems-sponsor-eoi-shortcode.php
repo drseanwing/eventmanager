@@ -1056,6 +1056,16 @@ class EMS_Sponsor_EOI_Shortcode {
 			return;
 		}
 
+		// Rate limiting: max 5 EOI submissions per hour per user
+		$rate_limit = $this->check_rate_limit();
+		if ( is_wp_error( $rate_limit ) ) {
+			$this->logger->warning(
+				sprintf( 'EOI rate limit exceeded for user %d', get_current_user_id() ),
+				EMS_Logger::CONTEXT_SECURITY
+			);
+			return;
+		}
+
 		// Load form state to retrieve all step data.
 		$form = new EMS_Multi_Step_Form( $form_id );
 
@@ -1088,6 +1098,9 @@ class EMS_Sponsor_EOI_Shortcode {
 		if ( $result ) {
 			// Capture the insert ID before clearing state.
 			$eoi_id = $result;
+
+			// Record rate limit
+			$this->record_eoi_submission();
 
 			// Clear form state.
 			$form->clear_state();
@@ -1278,5 +1291,59 @@ class EMS_Sponsor_EOI_Shortcode {
 			return get_permalink( $page_id );
 		}
 		return home_url( '/sponsor-onboarding/' );
+	}
+
+	// =========================================================================
+	// Rate Limiting (Task 10.4)
+	// =========================================================================
+
+	/**
+	 * Check the rate limit for the current user.
+	 *
+	 * Allows a maximum of 5 EOI submissions per user per hour.
+	 *
+	 * @since 1.5.0
+	 * @return true|WP_Error True if within limit, WP_Error if exceeded.
+	 */
+	private function check_rate_limit() {
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return true; // Not logged in users shouldn't reach here anyway
+		}
+
+		$key = 'ems_eoi_rl_' . $user_id;
+
+		$attempts = get_transient( $key );
+
+		if ( false !== $attempts && (int) $attempts >= 5 ) {
+			return new WP_Error(
+				'rate_limit_exceeded',
+				__( 'Too many submission attempts. Please try again later.', 'event-management-system' )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Record an EOI submission attempt for rate limiting.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	private function record_eoi_submission() {
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+
+		$key = 'ems_eoi_rl_' . $user_id;
+
+		$attempts = get_transient( $key );
+		if ( false === $attempts ) {
+			set_transient( $key, 1, HOUR_IN_SECONDS );
+		} else {
+			set_transient( $key, (int) $attempts + 1, HOUR_IN_SECONDS );
+		}
 	}
 }

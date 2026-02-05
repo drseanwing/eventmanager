@@ -7,474 +7,1243 @@
  * @package    Event_Management_System
  * @subpackage Event_Management_System/public/shortcodes
  * @since      1.4.0
+ * @version    1.5.0
  */
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
-    exit;
+	exit;
 }
 
 /**
  * Class EMS_Sponsor_Shortcodes
  *
  * Registers and renders shortcodes for:
- * - [ems_sponsor_portal] - Sponsor portal dashboard
+ * - [ems_sponsor_portal] - Sponsor portal dashboard with tabs
  * - [ems_sponsor_files] - Sponsor file listing
  *
  * @since 1.4.0
  */
 class EMS_Sponsor_Shortcodes {
 
-    /**
-     * Logger instance
-     *
-     * @since 1.4.0
-     * @var EMS_Logger
-     */
-    private $logger;
+	/**
+	 * Logger instance
+	 *
+	 * @since 1.4.0
+	 * @var EMS_Logger
+	 */
+	private $logger;
 
-    /**
-     * Sponsor portal handler
-     *
-     * @since 1.4.0
-     * @var EMS_Sponsor_Portal
-     */
-    private $sponsor_portal;
+	/**
+	 * Sponsor portal handler
+	 *
+	 * @since 1.4.0
+	 * @var EMS_Sponsor_Portal
+	 */
+	private $sponsor_portal;
 
-    /**
-     * Constructor
-     *
-     * Initialize dependencies and register shortcodes.
-     *
-     * @since 1.4.0
-     */
-    public function __construct() {
-        $this->logger = EMS_Logger::instance();
-        $this->sponsor_portal = new EMS_Sponsor_Portal();
+	/**
+	 * Sponsorship levels API
+	 *
+	 * @since 1.5.0
+	 * @var EMS_Sponsorship_Levels
+	 */
+	private $levels_api;
 
-        // Register shortcodes
-        add_shortcode( 'ems_sponsor_portal', array( $this, 'sponsor_portal_shortcode' ) );
-        add_shortcode( 'ems_sponsor_files', array( $this, 'sponsor_files_shortcode' ) );
+	/**
+	 * Constructor
+	 *
+	 * Initialize dependencies and register shortcodes.
+	 *
+	 * @since 1.4.0
+	 */
+	public function __construct() {
+		$this->logger         = EMS_Logger::instance();
+		$this->sponsor_portal = new EMS_Sponsor_Portal();
+		$this->levels_api     = new EMS_Sponsorship_Levels();
 
-        // Handle form submissions via AJAX
-        add_action( 'wp_ajax_ems_upload_sponsor_file', array( $this, 'ajax_upload_sponsor_file' ) );
-        add_action( 'wp_ajax_ems_delete_sponsor_file', array( $this, 'ajax_delete_sponsor_file' ) );
-    }
+		// Register shortcodes
+		add_shortcode( 'ems_sponsor_portal', array( $this, 'sponsor_portal_shortcode' ) );
+		add_shortcode( 'ems_sponsor_files', array( $this, 'sponsor_files_shortcode' ) );
 
-    /**
-     * Sponsor portal dashboard shortcode
-     *
-     * Renders the main sponsor portal with dashboard, events, and file management.
-     *
-     * Usage: [ems_sponsor_portal]
-     *
-     * @since 1.4.0
-     * @param array $atts Shortcode attributes.
-     * @return string Portal HTML.
-     */
-    public function sponsor_portal_shortcode( $atts ) {
-        // Check if user is logged in
-        if ( ! is_user_logged_in() ) {
-            $login_url = wp_login_url( add_query_arg( array() ) );
-            return '<div class="ems-notice ems-notice-warning">' . 
-                   sprintf(
-                       __( 'Please <a href="%s">log in</a> to access the sponsor portal.', 'event-management-system' ),
-                       esc_url( $login_url )
-                   ) . 
-                   '</div>';
-        }
+		// Handle form submissions via AJAX
+		add_action( 'wp_ajax_ems_upload_sponsor_file', array( $this, 'ajax_upload_sponsor_file' ) );
+		add_action( 'wp_ajax_ems_delete_sponsor_file', array( $this, 'ajax_delete_sponsor_file' ) );
+		add_action( 'wp_ajax_ems_save_sponsor_profile', array( $this, 'ajax_save_sponsor_profile' ) );
+		add_action( 'wp_ajax_ems_get_eoi_details', array( $this, 'ajax_get_eoi_details' ) );
+	}
 
-        // Check if user has sponsor capability
-        if ( ! current_user_can( 'access_ems_sponsor_portal' ) ) {
-            return '<div class="ems-notice ems-notice-error">' . 
-                   __( 'You do not have access to the sponsor portal.', 'event-management-system' ) . 
-                   '</div>';
-        }
+	/**
+	 * Sponsor portal dashboard shortcode
+	 *
+	 * Renders the main sponsor portal with tabbed navigation:
+	 * - Dashboard (statistics + events with level details)
+	 * - Organisation Profile (view/edit)
+	 * - Sponsorship Applications (EOI tracking)
+	 *
+	 * Usage: [ems_sponsor_portal]
+	 *
+	 * @since 1.4.0
+	 * @param array $atts Shortcode attributes.
+	 * @return string Portal HTML.
+	 */
+	public function sponsor_portal_shortcode( $atts ) {
+		// Check if user is logged in
+		if ( ! is_user_logged_in() ) {
+			$login_url = wp_login_url( add_query_arg( array() ) );
+			return '<div class="ems-notice ems-notice-warning">' .
+				   sprintf(
+					   __( 'Please <a href="%s">log in</a> to access the sponsor portal.', 'event-management-system' ),
+					   esc_url( $login_url )
+				   ) .
+				   '</div>';
+		}
 
-        // Get sponsor ID for current user
-        $sponsor_id = $this->sponsor_portal->get_user_sponsor_id( get_current_user_id() );
-        if ( ! $sponsor_id ) {
-            return '<div class="ems-notice ems-notice-error">' . 
-                   __( 'No sponsor profile associated with your account. Please contact the administrator.', 'event-management-system' ) . 
-                   '</div>';
-        }
+		// Check if user has sponsor capability
+		if ( ! current_user_can( 'access_ems_sponsor_portal' ) ) {
+			return '<div class="ems-notice ems-notice-error">' .
+				   __( 'You do not have access to the sponsor portal.', 'event-management-system' ) .
+				   '</div>';
+		}
 
-        // Get sponsor data
-        $sponsor = get_post( $sponsor_id );
-        $events = $this->sponsor_portal->get_sponsor_events( $sponsor_id );
-        $statistics = $this->sponsor_portal->get_sponsor_statistics( $sponsor_id );
+		// Get sponsor ID for current user
+		$sponsor_id = $this->sponsor_portal->get_user_sponsor_id( get_current_user_id() );
+		if ( ! $sponsor_id ) {
+			return '<div class="ems-notice ems-notice-error">' .
+				   __( 'No sponsor profile associated with your account. Please contact the administrator.', 'event-management-system' ) .
+				   '</div>';
+		}
 
-        ob_start();
-        ?>
-        
-        <div class="ems-sponsor-portal">
-            <!-- Portal Header -->
-            <div class="ems-sponsor-header">
-                <h1><?php echo esc_html( sprintf( __( 'Welcome, %s', 'event-management-system' ), $sponsor->post_title ) ); ?></h1>
-                <p class="ems-sponsor-description"><?php esc_html_e( 'Manage your event sponsorships and share files with event organizers.', 'event-management-system' ); ?></p>
-            </div>
+		// Get sponsor data
+		$sponsor    = get_post( $sponsor_id );
+		$events     = $this->sponsor_portal->get_sponsor_events( $sponsor_id );
+		$statistics = $this->sponsor_portal->get_sponsor_statistics( $sponsor_id );
+		$meta       = EMS_Sponsor_Meta::get_sponsor_meta( $sponsor_id );
+		$eois       = $this->sponsor_portal->get_sponsor_eois( $sponsor_id );
 
-            <!-- Statistics Dashboard -->
-            <div class="ems-sponsor-statistics">
-                <div class="ems-stat-card">
-                    <div class="ems-stat-value"><?php echo esc_html( $statistics['event_count'] ); ?></div>
-                    <div class="ems-stat-label"><?php esc_html_e( 'Linked Events', 'event-management-system' ); ?></div>
-                </div>
-                <div class="ems-stat-card">
-                    <div class="ems-stat-value"><?php echo esc_html( $statistics['file_count'] ); ?></div>
-                    <div class="ems-stat-label"><?php esc_html_e( 'Files Uploaded', 'event-management-system' ); ?></div>
-                </div>
-                <div class="ems-stat-card">
-                    <div class="ems-stat-value"><?php echo esc_html( $statistics['total_downloads'] ); ?></div>
-                    <div class="ems-stat-label"><?php esc_html_e( 'Total Downloads', 'event-management-system' ); ?></div>
-                </div>
-                <div class="ems-stat-card">
-                    <div class="ems-stat-value"><?php echo esc_html( size_format( $statistics['total_size'] ) ); ?></div>
-                    <div class="ems-stat-label"><?php esc_html_e( 'Storage Used', 'event-management-system' ); ?></div>
-                </div>
-            </div>
+		// Determine active tab
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only
+		$active_tab = isset( $_GET['portal_tab'] ) ? sanitize_key( $_GET['portal_tab'] ) : 'dashboard';
+		$valid_tabs = array( 'dashboard', 'profile', 'applications' );
+		if ( ! in_array( $active_tab, $valid_tabs, true ) ) {
+			$active_tab = 'dashboard';
+		}
 
-            <!-- Events List -->
-            <div class="ems-sponsor-events-section">
-                <h2><?php esc_html_e( 'Your Sponsored Events', 'event-management-system' ); ?></h2>
-                
-                <?php if ( empty( $events ) ) : ?>
-                    <p class="ems-no-results"><?php esc_html_e( 'You are not currently linked to any events.', 'event-management-system' ); ?></p>
-                <?php else : ?>
-                    <div class="ems-sponsor-events-list">
-                        <?php foreach ( $events as $event ) : ?>
-                            <div class="ems-sponsor-event-card" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>">
-                                <div class="ems-event-header">
-                                    <h3><?php echo esc_html( $event['event_title'] ); ?></h3>
-                                    <?php if ( $event['sponsor_level'] ) : ?>
-                                        <span class="ems-sponsor-level-badge"><?php echo esc_html( $event['sponsor_level'] ); ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <?php if ( $event['event_date'] ) : ?>
-                                    <p class="ems-event-date">
-                                        <strong><?php esc_html_e( 'Date:', 'event-management-system' ); ?></strong>
-                                        <?php echo esc_html( EMS_Date_Helper::format( $event['event_date'] ) ); ?>
-                                    </p>
-                                <?php endif; ?>
-                                <div class="ems-event-actions">
-                                    <button type="button" class="ems-button ems-toggle-files" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>">
-                                        <?php esc_html_e( 'Manage Files', 'event-management-system' ); ?>
-                                    </button>
-                                </div>
-                                
-                                <!-- Files Section (Initially Hidden) -->
-                                <div class="ems-event-files" id="ems-files-<?php echo esc_attr( $event['event_id'] ); ?>" style="display: none;">
-                                    <h4><?php esc_html_e( 'Files for this Event', 'event-management-system' ); ?></h4>
-                                    
-                                    <!-- Upload Form -->
-                                    <div class="ems-file-upload-section">
-                                        <h5><?php esc_html_e( 'Upload New File', 'event-management-system' ); ?></h5>
-                                        <form class="ems-sponsor-file-upload-form" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>" data-sponsor-id="<?php echo esc_attr( $sponsor_id ); ?>">
-                                            <div class="ems-form-group">
-                                                <label for="sponsor-file-<?php echo esc_attr( $event['event_id'] ); ?>"><?php esc_html_e( 'Choose File:', 'event-management-system' ); ?></label>
-                                                <input type="file" id="sponsor-file-<?php echo esc_attr( $event['event_id'] ); ?>" name="sponsor_file" required />
-                                                <p class="ems-field-help"><?php esc_html_e( 'Allowed types: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG, GIF, ZIP, MP4, MOV (Max: 25MB)', 'event-management-system' ); ?></p>
-                                            </div>
-                                            <div class="ems-form-group">
-                                                <label for="file-description-<?php echo esc_attr( $event['event_id'] ); ?>"><?php esc_html_e( 'Description:', 'event-management-system' ); ?></label>
-                                                <textarea id="file-description-<?php echo esc_attr( $event['event_id'] ); ?>" name="file_description" rows="3"></textarea>
-                                            </div>
-                                            <div class="ems-form-group">
-                                                <button type="submit" class="ems-button ems-button-primary"><?php esc_html_e( 'Upload File', 'event-management-system' ); ?></button>
-                                            </div>
-                                            <div class="ems-upload-status"></div>
-                                        </form>
-                                    </div>
-                                    
-                                    <!-- Files List -->
-                                    <div class="ems-files-list">
-                                        <?php
-                                        $files = $this->sponsor_portal->get_sponsor_files( $sponsor_id, $event['event_id'] );
-                                        if ( empty( $files ) ) :
-                                        ?>
-                                            <p class="ems-no-files"><?php esc_html_e( 'No files uploaded yet.', 'event-management-system' ); ?></p>
-                                        <?php else : ?>
-                                            <table class="ems-files-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th><?php esc_html_e( 'File Name', 'event-management-system' ); ?></th>
-                                                        <th><?php esc_html_e( 'Size', 'event-management-system' ); ?></th>
-                                                        <th><?php esc_html_e( 'Uploaded', 'event-management-system' ); ?></th>
-                                                        <th><?php esc_html_e( 'Downloads', 'event-management-system' ); ?></th>
-                                                        <th><?php esc_html_e( 'Actions', 'event-management-system' ); ?></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ( $files as $file ) : ?>
-                                                        <tr data-file-id="<?php echo esc_attr( $file->id ); ?>">
-                                                            <td>
-                                                                <strong><?php echo esc_html( $file->file_name ); ?></strong>
-                                                                <?php if ( $file->description ) : ?>
-                                                                    <br /><small><?php echo esc_html( $file->description ); ?></small>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td><?php echo esc_html( size_format( $file->file_size ) ); ?></td>
-                                                            <td><?php echo esc_html( EMS_Date_Helper::format( $file->upload_date ) ); ?></td>
-                                                            <td><?php echo esc_html( $file->downloads ); ?></td>
-                                                            <td>
-                                                                <a href="<?php echo esc_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ) ); ?>" class="ems-button ems-button-small" target="_blank">
-                                                                    <?php esc_html_e( 'Download', 'event-management-system' ); ?>
-                                                                </a>
-                                                                <button type="button" class="ems-button ems-button-small ems-button-danger ems-delete-file" data-file-id="<?php echo esc_attr( $file->id ); ?>">
-                                                                    <?php esc_html_e( 'Delete', 'event-management-system' ); ?>
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+		ob_start();
+		?>
 
-        <script type="text/javascript">
-        jQuery(document).ready(function($) {
-            // Toggle files section
-            $('.ems-toggle-files').on('click', function() {
-                var eventId = $(this).data('event-id');
-                $('#ems-files-' + eventId).slideToggle();
-            });
+		<div class="ems-sponsor-portal">
+			<!-- Portal Header -->
+			<div class="ems-sponsor-header">
+				<h1><?php echo esc_html( sprintf( __( 'Welcome, %s', 'event-management-system' ), $sponsor->post_title ) ); ?></h1>
+				<p class="ems-sponsor-description"><?php esc_html_e( 'Manage your event sponsorships, organisation profile, and applications.', 'event-management-system' ); ?></p>
+			</div>
 
-            // Handle file upload via AJAX
-            $('.ems-sponsor-file-upload-form').on('submit', function(e) {
-                e.preventDefault();
-                
-                var $form = $(this);
-                var eventId = $form.data('event-id');
-                var sponsorId = $form.data('sponsor-id');
-                var $status = $form.find('.ems-upload-status');
-                var formData = new FormData();
-                
-                var fileInput = $form.find('input[type="file"]')[0];
-                if (!fileInput.files[0]) {
-                    $status.html('<div class="ems-notice ems-notice-error">Please select a file.</div>');
-                    return;
-                }
-                
-                formData.append('action', 'ems_upload_sponsor_file');
-                formData.append('nonce', ems_public.nonce);
-                formData.append('sponsor_id', sponsorId);
-                formData.append('event_id', eventId);
-                formData.append('sponsor_file', fileInput.files[0]);
-                formData.append('file_description', $form.find('textarea[name="file_description"]').val());
-                
-                $status.html('<div class="ems-notice ems-notice-info">Uploading file...</div>');
-                $form.find('button[type="submit"]').prop('disabled', true);
-                
-                $.ajax({
-                    url: ems_public.ajax_url,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                            $status.html('<div class="ems-notice ems-notice-success">' + response.data.message + '</div>');
-                            // Reload page after 2 seconds to show new file
-                            setTimeout(function() {
-                                location.reload();
-                            }, 2000);
-                        } else {
-                            $status.html('<div class="ems-notice ems-notice-error">' + response.data + '</div>');
-                            $form.find('button[type="submit"]').prop('disabled', false);
-                        }
-                    },
-                    error: function() {
-                        $status.html('<div class="ems-notice ems-notice-error">An error occurred. Please try again.</div>');
-                        $form.find('button[type="submit"]').prop('disabled', false);
-                    }
-                });
-            });
+			<!-- Portal Tab Navigation -->
+			<div class="ems-portal-tabs" role="tablist">
+				<button type="button" class="ems-portal-tab <?php echo 'dashboard' === $active_tab ? 'ems-portal-tab--active' : ''; ?>" role="tab" aria-selected="<?php echo 'dashboard' === $active_tab ? 'true' : 'false'; ?>" aria-controls="ems-tab-dashboard" data-tab="dashboard">
+					<?php esc_html_e( 'Dashboard', 'event-management-system' ); ?>
+				</button>
+				<button type="button" class="ems-portal-tab <?php echo 'profile' === $active_tab ? 'ems-portal-tab--active' : ''; ?>" role="tab" aria-selected="<?php echo 'profile' === $active_tab ? 'true' : 'false'; ?>" aria-controls="ems-tab-profile" data-tab="profile">
+					<?php esc_html_e( 'Organisation Profile', 'event-management-system' ); ?>
+				</button>
+				<button type="button" class="ems-portal-tab <?php echo 'applications' === $active_tab ? 'ems-portal-tab--active' : ''; ?>" role="tab" aria-selected="<?php echo 'applications' === $active_tab ? 'true' : 'false'; ?>" aria-controls="ems-tab-applications" data-tab="applications">
+					<?php esc_html_e( 'Sponsorship Applications', 'event-management-system' ); ?>
+					<?php if ( ! empty( $eois ) ) : ?>
+						<span class="ems-portal-tab__count"><?php echo esc_html( count( $eois ) ); ?></span>
+					<?php endif; ?>
+				</button>
+			</div>
 
-            // Handle file deletion
-            $('.ems-delete-file').on('click', function() {
-                if (!confirm('Are you sure you want to delete this file?')) {
-                    return;
-                }
-                
-                var fileId = $(this).data('file-id');
-                var $row = $(this).closest('tr');
-                
-                $.ajax({
-                    url: ems_public.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'ems_delete_sponsor_file',
-                        nonce: ems_public.nonce,
-                        file_id: fileId
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $row.fadeOut(function() {
-                                $row.remove();
-                            });
-                        } else {
-                            alert(response.data);
-                        }
-                    },
-                    error: function() {
-                        alert('An error occurred. Please try again.');
-                    }
-                });
-            });
-        });
-        </script>
-        
-        <?php
-        return ob_get_clean();
-    }
+			<!-- Tab: Dashboard -->
+			<div class="ems-portal-tab-content <?php echo 'dashboard' === $active_tab ? 'ems-portal-tab-content--active' : ''; ?>" id="ems-tab-dashboard" role="tabpanel">
+				<?php $this->render_dashboard_tab( $sponsor_id, $sponsor, $events, $statistics ); ?>
+			</div>
 
-    /**
-     * Sponsor files list shortcode
-     *
-     * Renders a list of files for a specific sponsor/event.
-     *
-     * Usage: [ems_sponsor_files sponsor_id="123" event_id="456"]
-     *
-     * @since 1.4.0
-     * @param array $atts Shortcode attributes.
-     * @return string Files list HTML.
-     */
-    public function sponsor_files_shortcode( $atts ) {
-        $atts = shortcode_atts( array(
-            'sponsor_id' => 0,
-            'event_id'   => 0,
-        ), $atts, 'ems_sponsor_files' );
+			<!-- Tab: Organisation Profile -->
+			<div class="ems-portal-tab-content <?php echo 'profile' === $active_tab ? 'ems-portal-tab-content--active' : ''; ?>" id="ems-tab-profile" role="tabpanel">
+				<?php $this->render_profile_tab( $sponsor_id, $meta ); ?>
+			</div>
 
-        $sponsor_id = absint( $atts['sponsor_id'] );
-        $event_id = absint( $atts['event_id'] );
+			<!-- Tab: Sponsorship Applications -->
+			<div class="ems-portal-tab-content <?php echo 'applications' === $active_tab ? 'ems-portal-tab-content--active' : ''; ?>" id="ems-tab-applications" role="tabpanel">
+				<?php $this->render_applications_tab( $sponsor_id, $eois ); ?>
+			</div>
+		</div>
 
-        if ( ! $sponsor_id ) {
-            return '<p>' . esc_html__( 'Invalid sponsor ID', 'event-management-system' ) . '</p>';
-        }
+		<script type="text/javascript">
+		jQuery(document).ready(function($) {
+			// Tab navigation
+			$('.ems-portal-tab').on('click', function() {
+				var tabId = $(this).data('tab');
 
-        $files = $this->sponsor_portal->get_sponsor_files( $sponsor_id, $event_id );
+				// Update active tab button
+				$('.ems-portal-tab').removeClass('ems-portal-tab--active').attr('aria-selected', 'false');
+				$(this).addClass('ems-portal-tab--active').attr('aria-selected', 'true');
 
-        if ( empty( $files ) ) {
-            return '<p>' . esc_html__( 'No files available.', 'event-management-system' ) . '</p>';
-        }
+				// Update active tab content
+				$('.ems-portal-tab-content').removeClass('ems-portal-tab-content--active');
+				$('#ems-tab-' + tabId).addClass('ems-portal-tab-content--active');
 
-        ob_start();
-        ?>
-        <div class="ems-sponsor-files-widget">
-            <h3><?php esc_html_e( 'Sponsor Files', 'event-management-system' ); ?></h3>
-            <ul class="ems-files-list">
-                <?php foreach ( $files as $file ) : ?>
-                    <li>
-                        <a href="<?php echo esc_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ) ); ?>" target="_blank">
-                            <?php echo esc_html( $file->file_name ); ?>
-                        </a>
-                        <span class="ems-file-size">(<?php echo esc_html( size_format( $file->file_size ) ); ?>)</span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
+				// Update URL without reload
+				if (window.history && window.history.replaceState) {
+					var url = new URL(window.location);
+					url.searchParams.set('portal_tab', tabId);
+					window.history.replaceState({}, '', url);
+				}
+			});
 
-    /**
-     * AJAX handler for sponsor file upload
-     *
-     * @since 1.4.0
-     * @return void
-     */
-    public function ajax_upload_sponsor_file() {
-        check_ajax_referer( 'ems_public_nonce', 'nonce' );
+			// Toggle files section
+			$('.ems-toggle-files').on('click', function() {
+				var eventId = $(this).data('event-id');
+				$('#ems-files-' + eventId).slideToggle();
+			});
 
-        try {
-            // Sanitize POST data
-            $sponsor_id = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
-            $event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
-            $description = isset( $_POST['file_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['file_description'] ) ) : '';
+			// Handle file upload via AJAX
+			$('.ems-sponsor-file-upload-form').on('submit', function(e) {
+				e.preventDefault();
 
-            if ( ! $sponsor_id || ! $event_id ) {
-                wp_send_json_error( __( 'Invalid parameters', 'event-management-system' ) );
-            }
+				var $form = $(this);
+				var eventId = $form.data('event-id');
+				var sponsorId = $form.data('sponsor-id');
+				var $status = $form.find('.ems-upload-status');
+				var formData = new FormData();
 
-            // Check if file was uploaded
-            if ( ! isset( $_FILES['sponsor_file'] ) || empty( $_FILES['sponsor_file']['name'] ) ) {
-                wp_send_json_error( __( 'No file uploaded', 'event-management-system' ) );
-            }
+				var fileInput = $form.find('input[type="file"]')[0];
+				if (!fileInput.files[0]) {
+					$status.html('<div class="ems-notice ems-notice-error"><?php echo esc_js( __( 'Please select a file.', 'event-management-system' ) ); ?></div>');
+					return;
+				}
 
-            // Sanitize file data
-            $file_data = array(
-                'name'     => sanitize_file_name( $_FILES['sponsor_file']['name'] ),
-                'type'     => sanitize_mime_type( $_FILES['sponsor_file']['type'] ),
-                'tmp_name' => $_FILES['sponsor_file']['tmp_name'],
-                'error'    => $_FILES['sponsor_file']['error'],
-                'size'     => absint( $_FILES['sponsor_file']['size'] ),
-            );
+				formData.append('action', 'ems_upload_sponsor_file');
+				formData.append('nonce', ems_public.nonce);
+				formData.append('sponsor_id', sponsorId);
+				formData.append('event_id', eventId);
+				formData.append('sponsor_file', fileInput.files[0]);
+				formData.append('file_description', $form.find('textarea[name="file_description"]').val());
 
-            // Upload file
-            $result = $this->sponsor_portal->upload_sponsor_file(
-                $file_data,
-                $sponsor_id,
-                $event_id,
-                array(
-                    'description' => $description,
-                    'visibility'  => 'private',
-                )
-            );
+				$status.html('<div class="ems-notice ems-notice-info"><?php echo esc_js( __( 'Uploading file...', 'event-management-system' ) ); ?></div>');
+				$form.find('button[type="submit"]').prop('disabled', true);
 
-            if ( $result['success'] ) {
-                wp_send_json_success( $result );
-            } else {
-                wp_send_json_error( $result['message'] );
-            }
+				$.ajax({
+					url: ems_public.ajax_url,
+					type: 'POST',
+					data: formData,
+					processData: false,
+					contentType: false,
+					success: function(response) {
+						if (response.success) {
+							$status.html('<div class="ems-notice ems-notice-success">' + response.data.message + '</div>');
+							setTimeout(function() { location.reload(); }, 2000);
+						} else {
+							$status.html('<div class="ems-notice ems-notice-error">' + response.data + '</div>');
+							$form.find('button[type="submit"]').prop('disabled', false);
+						}
+					},
+					error: function() {
+						$status.html('<div class="ems-notice ems-notice-error"><?php echo esc_js( __( 'An error occurred. Please try again.', 'event-management-system' ) ); ?></div>');
+						$form.find('button[type="submit"]').prop('disabled', false);
+					}
+				});
+			});
 
-        } catch ( Exception $e ) {
-            $this->logger->error(
-                'Exception in ajax_upload_sponsor_file: ' . $e->getMessage(),
-                EMS_Logger::CONTEXT_GENERAL
-            );
+			// Handle file deletion
+			$('.ems-delete-file').on('click', function() {
+				if (!confirm('<?php echo esc_js( __( 'Are you sure you want to delete this file?', 'event-management-system' ) ); ?>')) {
+					return;
+				}
 
-            wp_send_json_error( __( 'An error occurred during file upload', 'event-management-system' ) );
-        }
-    }
+				var fileId = $(this).data('file-id');
+				var $row = $(this).closest('tr');
 
-    /**
-     * AJAX handler for sponsor file deletion
-     *
-     * @since 1.4.0
-     * @return void
-     */
-    public function ajax_delete_sponsor_file() {
-        check_ajax_referer( 'ems_public_nonce', 'nonce' );
+				$.ajax({
+					url: ems_public.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_delete_sponsor_file',
+						nonce: ems_public.nonce,
+						file_id: fileId
+					},
+					success: function(response) {
+						if (response.success) {
+							$row.fadeOut(function() { $row.remove(); });
+						} else {
+							alert(response.data);
+						}
+					},
+					error: function() {
+						alert('<?php echo esc_js( __( 'An error occurred. Please try again.', 'event-management-system' ) ); ?>');
+					}
+				});
+			});
 
-        try {
-            $file_id = isset( $_POST['file_id'] ) ? absint( $_POST['file_id'] ) : 0;
+			// Handle profile save via AJAX
+			$('#ems-sponsor-profile-form').on('submit', function(e) {
+				e.preventDefault();
 
-            if ( ! $file_id ) {
-                wp_send_json_error( __( 'Invalid file ID', 'event-management-system' ) );
-            }
+				var $form = $(this);
+				var $status = $form.find('.ems-profile-save-status');
+				var $btn = $form.find('button[type="submit"]');
 
-            $result = $this->sponsor_portal->delete_sponsor_file( $file_id );
+				$btn.prop('disabled', true).addClass('loading');
+				$status.html('<div class="ems-notice ems-notice-info"><?php echo esc_js( __( 'Saving profile...', 'event-management-system' ) ); ?></div>');
 
-            if ( $result['success'] ) {
-                wp_send_json_success( $result['message'] );
-            } else {
-                wp_send_json_error( $result['message'] );
-            }
+				$.ajax({
+					url: ems_public.ajax_url,
+					type: 'POST',
+					data: $form.serialize(),
+					success: function(response) {
+						if (response.success) {
+							$status.html('<div class="ems-notice ems-notice-success">' + response.data.message + '</div>');
+						} else {
+							$status.html('<div class="ems-notice ems-notice-error">' + response.data + '</div>');
+						}
+						$btn.prop('disabled', false).removeClass('loading');
+					},
+					error: function() {
+						$status.html('<div class="ems-notice ems-notice-error"><?php echo esc_js( __( 'An error occurred. Please try again.', 'event-management-system' ) ); ?></div>');
+						$btn.prop('disabled', false).removeClass('loading');
+					}
+				});
+			});
 
-        } catch ( Exception $e ) {
-            $this->logger->error(
-                'Exception in ajax_delete_sponsor_file: ' . $e->getMessage(),
-                EMS_Logger::CONTEXT_GENERAL
-            );
+			// Toggle profile edit mode
+			$('.ems-profile-edit-toggle').on('click', function() {
+				$('.ems-profile-view').toggleClass('ems-hidden');
+				$('.ems-profile-edit').toggleClass('ems-hidden');
+			});
 
-            wp_send_json_error( __( 'An error occurred during file deletion', 'event-management-system' ) );
-        }
-    }
+			// EOI details expand/collapse
+			$('.ems-eoi-view-details').on('click', function() {
+				var eoiId = $(this).data('eoi-id');
+				var $details = $('#ems-eoi-details-' + eoiId);
+
+				if ($details.is(':visible')) {
+					$details.slideUp();
+					$(this).text('<?php echo esc_js( __( 'View Details', 'event-management-system' ) ); ?>');
+					return;
+				}
+
+				// Load details via AJAX if not already loaded
+				if ($details.find('.ems-eoi-detail-content').length === 0) {
+					$details.html('<div class="ems-loading"><div class="ems-spinner"></div></div>');
+					$details.slideDown();
+
+					$.ajax({
+						url: ems_public.ajax_url,
+						type: 'POST',
+						data: {
+							action: 'ems_get_eoi_details',
+							nonce: ems_public.nonce,
+							eoi_id: eoiId
+						},
+						success: function(response) {
+							if (response.success) {
+								$details.html(response.data.html);
+							} else {
+								$details.html('<div class="ems-notice ems-notice-error">' + response.data + '</div>');
+							}
+						},
+						error: function() {
+							$details.html('<div class="ems-notice ems-notice-error"><?php echo esc_js( __( 'Failed to load details.', 'event-management-system' ) ); ?></div>');
+						}
+					});
+				} else {
+					$details.slideDown();
+				}
+
+				$(this).text('<?php echo esc_js( __( 'Hide Details', 'event-management-system' ) ); ?>');
+			});
+		});
+		</script>
+
+		<?php
+		return ob_get_clean();
+	}
+
+	// =========================================================================
+	// Tab Renderers
+	// =========================================================================
+
+	/**
+	 * Render the Dashboard tab content
+	 *
+	 * Shows statistics and event cards with sponsorship level details.
+	 *
+	 * @since 1.5.0
+	 * @param int    $sponsor_id Sponsor post ID.
+	 * @param WP_Post $sponsor  Sponsor post object.
+	 * @param array  $events    Array of event data.
+	 * @param array  $statistics Sponsor statistics.
+	 * @return void
+	 */
+	private function render_dashboard_tab( $sponsor_id, $sponsor, $events, $statistics ) {
+		?>
+		<!-- Statistics Dashboard -->
+		<div class="ems-sponsor-statistics">
+			<div class="ems-stat-card">
+				<div class="ems-stat-value"><?php echo esc_html( $statistics['event_count'] ); ?></div>
+				<div class="ems-stat-label"><?php esc_html_e( 'Linked Events', 'event-management-system' ); ?></div>
+			</div>
+			<div class="ems-stat-card">
+				<div class="ems-stat-value"><?php echo esc_html( $statistics['file_count'] ); ?></div>
+				<div class="ems-stat-label"><?php esc_html_e( 'Files Uploaded', 'event-management-system' ); ?></div>
+			</div>
+			<div class="ems-stat-card">
+				<div class="ems-stat-value"><?php echo esc_html( $statistics['total_downloads'] ); ?></div>
+				<div class="ems-stat-label"><?php esc_html_e( 'Total Downloads', 'event-management-system' ); ?></div>
+			</div>
+			<div class="ems-stat-card">
+				<div class="ems-stat-value"><?php echo esc_html( size_format( $statistics['total_size'] ) ); ?></div>
+				<div class="ems-stat-label"><?php esc_html_e( 'Storage Used', 'event-management-system' ); ?></div>
+			</div>
+		</div>
+
+		<!-- Events List -->
+		<div class="ems-sponsor-events-section">
+			<h2><?php esc_html_e( 'Your Sponsored Events', 'event-management-system' ); ?></h2>
+
+			<?php if ( empty( $events ) ) : ?>
+				<p class="ems-no-results"><?php esc_html_e( 'You are not currently linked to any events.', 'event-management-system' ); ?></p>
+			<?php else : ?>
+				<div class="ems-sponsor-events-list">
+					<?php foreach ( $events as $event ) : ?>
+						<?php
+						// Task 8.3: Get level details for this sponsor's level on this event
+						$level_info = $this->get_event_level_info( $event['event_id'], $event['sponsor_level'] );
+						?>
+						<div class="ems-sponsor-event-card" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>">
+							<div class="ems-event-header">
+								<h3><?php echo esc_html( $event['event_title'] ); ?></h3>
+								<?php if ( $level_info ) : ?>
+									<span class="ems-sponsor-level-pill" style="background-color: <?php echo esc_attr( $level_info['colour'] ); ?>; color: <?php echo esc_attr( $this->get_contrast_colour( $level_info['colour'] ) ); ?>;">
+										<?php echo esc_html( $level_info['name'] ); ?>
+									</span>
+								<?php elseif ( $event['sponsor_level'] ) : ?>
+									<span class="ems-sponsor-level-badge"><?php echo esc_html( $event['sponsor_level'] ); ?></span>
+								<?php endif; ?>
+							</div>
+
+							<?php if ( $event['event_date'] ) : ?>
+								<p class="ems-event-date">
+									<strong><?php esc_html_e( 'Date:', 'event-management-system' ); ?></strong>
+									<?php echo esc_html( EMS_Date_Helper::format( $event['event_date'] ) ); ?>
+								</p>
+							<?php endif; ?>
+
+							<?php // Task 8.3: Show level value and recognition text ?>
+							<?php if ( $level_info ) : ?>
+								<div class="ems-event-level-details">
+									<?php if ( ! empty( $level_info['value_aud'] ) ) : ?>
+										<p class="ems-event-level-value">
+											<strong><?php esc_html_e( 'Sponsorship Value:', 'event-management-system' ); ?></strong>
+											<?php echo esc_html( '$' . number_format( (float) $level_info['value_aud'], 2 ) . ' AUD' ); ?>
+										</p>
+									<?php endif; ?>
+									<?php if ( ! empty( $level_info['recognition_text'] ) ) : ?>
+										<div class="ems-event-level-recognition">
+											<strong><?php esc_html_e( 'Recognition:', 'event-management-system' ); ?></strong>
+											<p><?php echo esc_html( $level_info['recognition_text'] ); ?></p>
+										</div>
+									<?php endif; ?>
+								</div>
+							<?php endif; ?>
+
+							<div class="ems-event-actions">
+								<button type="button" class="ems-button ems-toggle-files" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>">
+									<?php esc_html_e( 'Manage Files', 'event-management-system' ); ?>
+								</button>
+							</div>
+
+							<!-- Files Section (Initially Hidden) -->
+							<div class="ems-event-files" id="ems-files-<?php echo esc_attr( $event['event_id'] ); ?>" style="display: none;">
+								<h4><?php esc_html_e( 'Files for this Event', 'event-management-system' ); ?></h4>
+
+								<!-- Upload Form -->
+								<div class="ems-file-upload-section">
+									<h5><?php esc_html_e( 'Upload New File', 'event-management-system' ); ?></h5>
+									<form class="ems-sponsor-file-upload-form" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>" data-sponsor-id="<?php echo esc_attr( $sponsor_id ); ?>">
+										<div class="ems-form-group">
+											<label for="sponsor-file-<?php echo esc_attr( $event['event_id'] ); ?>"><?php esc_html_e( 'Choose File:', 'event-management-system' ); ?></label>
+											<input type="file" id="sponsor-file-<?php echo esc_attr( $event['event_id'] ); ?>" name="sponsor_file" required />
+											<p class="ems-field-help"><?php esc_html_e( 'Allowed types: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG, GIF, ZIP, MP4, MOV (Max: 25MB)', 'event-management-system' ); ?></p>
+										</div>
+										<div class="ems-form-group">
+											<label for="file-description-<?php echo esc_attr( $event['event_id'] ); ?>"><?php esc_html_e( 'Description:', 'event-management-system' ); ?></label>
+											<textarea id="file-description-<?php echo esc_attr( $event['event_id'] ); ?>" name="file_description" rows="3"></textarea>
+										</div>
+										<div class="ems-form-group">
+											<button type="submit" class="ems-button ems-button-primary"><?php esc_html_e( 'Upload File', 'event-management-system' ); ?></button>
+										</div>
+										<div class="ems-upload-status"></div>
+									</form>
+								</div>
+
+								<!-- Files List -->
+								<div class="ems-files-list">
+									<?php
+									$files = $this->sponsor_portal->get_sponsor_files( $sponsor_id, $event['event_id'] );
+									if ( empty( $files ) ) :
+									?>
+										<p class="ems-no-files"><?php esc_html_e( 'No files uploaded yet.', 'event-management-system' ); ?></p>
+									<?php else : ?>
+										<table class="ems-files-table">
+											<thead>
+												<tr>
+													<th><?php esc_html_e( 'File Name', 'event-management-system' ); ?></th>
+													<th><?php esc_html_e( 'Size', 'event-management-system' ); ?></th>
+													<th><?php esc_html_e( 'Uploaded', 'event-management-system' ); ?></th>
+													<th><?php esc_html_e( 'Downloads', 'event-management-system' ); ?></th>
+													<th><?php esc_html_e( 'Actions', 'event-management-system' ); ?></th>
+												</tr>
+											</thead>
+											<tbody>
+												<?php foreach ( $files as $file ) : ?>
+													<tr data-file-id="<?php echo esc_attr( $file->id ); ?>">
+														<td>
+															<strong><?php echo esc_html( $file->file_name ); ?></strong>
+															<?php if ( $file->description ) : ?>
+																<br /><small><?php echo esc_html( $file->description ); ?></small>
+															<?php endif; ?>
+														</td>
+														<td><?php echo esc_html( size_format( $file->file_size ) ); ?></td>
+														<td><?php echo esc_html( EMS_Date_Helper::format( $file->upload_date ) ); ?></td>
+														<td><?php echo esc_html( $file->downloads ); ?></td>
+														<td>
+															<a href="<?php echo esc_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ) ); ?>" class="ems-button ems-button-small" target="_blank">
+																<?php esc_html_e( 'Download', 'event-management-system' ); ?>
+															</a>
+															<button type="button" class="ems-button ems-button-small ems-button-danger ems-delete-file" data-file-id="<?php echo esc_attr( $file->id ); ?>">
+																<?php esc_html_e( 'Delete', 'event-management-system' ); ?>
+															</button>
+														</td>
+													</tr>
+												<?php endforeach; ?>
+											</tbody>
+										</table>
+									<?php endif; ?>
+								</div>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Organisation Profile tab
+	 *
+	 * Shows sponsor organisation details with inline edit capability.
+	 *
+	 * @since 1.5.0
+	 * @param int   $sponsor_id Sponsor post ID.
+	 * @param array $meta       Sponsor meta data.
+	 * @return void
+	 */
+	private function render_profile_tab( $sponsor_id, $meta ) {
+		?>
+		<div class="ems-sponsor-profile-section">
+			<div class="ems-profile-header">
+				<h2><?php esc_html_e( 'Organisation Profile', 'event-management-system' ); ?></h2>
+				<button type="button" class="ems-button ems-button-small ems-profile-edit-toggle">
+					<?php esc_html_e( 'Edit Profile', 'event-management-system' ); ?>
+				</button>
+			</div>
+
+			<!-- View Mode -->
+			<div class="ems-profile-view">
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Organisation Details', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php $this->render_profile_field( __( 'Legal Name', 'event-management-system' ), $meta['legal_name'] ); ?>
+						<?php $this->render_profile_field( __( 'Trading Name', 'event-management-system' ), $meta['trading_name'] ); ?>
+						<?php $this->render_profile_field( __( 'ABN', 'event-management-system' ), $meta['abn'] ); ?>
+						<?php $this->render_profile_field( __( 'ACN', 'event-management-system' ), $meta['acn'] ); ?>
+						<?php $this->render_profile_field( __( 'Registered Address', 'event-management-system' ), $meta['registered_address'] ); ?>
+						<?php $this->render_profile_field( __( 'Website', 'event-management-system' ), $meta['website_url'], 'url' ); ?>
+						<?php $this->render_profile_field( __( 'Country', 'event-management-system' ), $meta['country'] ); ?>
+						<?php $this->render_profile_field( __( 'Parent Company', 'event-management-system' ), $meta['parent_company'] ); ?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Primary Contact', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php $this->render_profile_field( __( 'Contact Name', 'event-management-system' ), $meta['contact_name'] ); ?>
+						<?php $this->render_profile_field( __( 'Contact Role', 'event-management-system' ), $meta['contact_role'] ); ?>
+						<?php $this->render_profile_field( __( 'Contact Email', 'event-management-system' ), $meta['contact_email'], 'email' ); ?>
+						<?php $this->render_profile_field( __( 'Contact Phone', 'event-management-system' ), $meta['contact_phone'] ); ?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Signatory', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php $this->render_profile_field( __( 'Signatory Name', 'event-management-system' ), $meta['signatory_name'] ); ?>
+						<?php $this->render_profile_field( __( 'Signatory Title', 'event-management-system' ), $meta['signatory_title'] ); ?>
+						<?php $this->render_profile_field( __( 'Signatory Email', 'event-management-system' ), $meta['signatory_email'], 'email' ); ?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Marketing Contact', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php $this->render_profile_field( __( 'Marketing Contact Name', 'event-management-system' ), $meta['marketing_contact_name'] ); ?>
+						<?php $this->render_profile_field( __( 'Marketing Contact Email', 'event-management-system' ), $meta['marketing_contact_email'], 'email' ); ?>
+					</div>
+				</div>
+			</div>
+
+			<!-- Edit Mode (Initially Hidden) -->
+			<div class="ems-profile-edit ems-hidden">
+				<form id="ems-sponsor-profile-form" class="ems-form">
+					<input type="hidden" name="action" value="ems_save_sponsor_profile" />
+					<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'ems_public_nonce' ) ); ?>" />
+					<input type="hidden" name="sponsor_id" value="<?php echo esc_attr( $sponsor_id ); ?>" />
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Organisation Details', 'event-management-system' ); ?></h3>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'legal_name', __( 'Legal Name', 'event-management-system' ), $meta['legal_name'], 'text' ); ?>
+							<?php $this->render_edit_field( 'trading_name', __( 'Trading Name', 'event-management-system' ), $meta['trading_name'], 'text' ); ?>
+						</div>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'abn', __( 'ABN', 'event-management-system' ), $meta['abn'], 'text' ); ?>
+							<?php $this->render_edit_field( 'acn', __( 'ACN', 'event-management-system' ), $meta['acn'], 'text' ); ?>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-registered_address"><?php esc_html_e( 'Registered Address', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-registered_address" name="registered_address" rows="3" class="ems-form-control"><?php echo esc_textarea( $meta['registered_address'] ); ?></textarea>
+						</div>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'website_url', __( 'Website URL', 'event-management-system' ), $meta['website_url'], 'url' ); ?>
+							<?php $this->render_edit_field( 'country', __( 'Country', 'event-management-system' ), $meta['country'], 'text' ); ?>
+						</div>
+						<?php $this->render_edit_field( 'parent_company', __( 'Parent Company', 'event-management-system' ), $meta['parent_company'], 'text' ); ?>
+					</div>
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Primary Contact', 'event-management-system' ); ?></h3>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'contact_name', __( 'Contact Name', 'event-management-system' ), $meta['contact_name'], 'text' ); ?>
+							<?php $this->render_edit_field( 'contact_role', __( 'Contact Role', 'event-management-system' ), $meta['contact_role'], 'text' ); ?>
+						</div>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'contact_email', __( 'Contact Email', 'event-management-system' ), $meta['contact_email'], 'email' ); ?>
+							<?php $this->render_edit_field( 'contact_phone', __( 'Contact Phone', 'event-management-system' ), $meta['contact_phone'], 'tel' ); ?>
+						</div>
+					</div>
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Signatory', 'event-management-system' ); ?></h3>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'signatory_name', __( 'Signatory Name', 'event-management-system' ), $meta['signatory_name'], 'text' ); ?>
+							<?php $this->render_edit_field( 'signatory_title', __( 'Signatory Title', 'event-management-system' ), $meta['signatory_title'], 'text' ); ?>
+						</div>
+						<?php $this->render_edit_field( 'signatory_email', __( 'Signatory Email', 'event-management-system' ), $meta['signatory_email'], 'email' ); ?>
+					</div>
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Marketing Contact', 'event-management-system' ); ?></h3>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'marketing_contact_name', __( 'Marketing Contact Name', 'event-management-system' ), $meta['marketing_contact_name'], 'text' ); ?>
+							<?php $this->render_edit_field( 'marketing_contact_email', __( 'Marketing Contact Email', 'event-management-system' ), $meta['marketing_contact_email'], 'email' ); ?>
+						</div>
+					</div>
+
+					<div class="ems-profile-actions">
+						<button type="submit" class="ems-button ems-button-primary"><?php esc_html_e( 'Save Changes', 'event-management-system' ); ?></button>
+						<button type="button" class="ems-button ems-profile-edit-toggle"><?php esc_html_e( 'Cancel', 'event-management-system' ); ?></button>
+					</div>
+					<div class="ems-profile-save-status"></div>
+				</form>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Sponsorship Applications (EOI) tab
+	 *
+	 * Shows a table of all EOI submissions with status badges and expandable details.
+	 *
+	 * @since 1.5.0
+	 * @param int   $sponsor_id Sponsor post ID.
+	 * @param array $eois       Array of EOI row objects.
+	 * @return void
+	 */
+	private function render_applications_tab( $sponsor_id, $eois ) {
+		?>
+		<div class="ems-sponsor-applications-section">
+			<h2><?php esc_html_e( 'Sponsorship Applications', 'event-management-system' ); ?></h2>
+
+			<?php if ( empty( $eois ) ) : ?>
+				<p class="ems-no-results"><?php esc_html_e( 'You have not submitted any sponsorship applications yet.', 'event-management-system' ); ?></p>
+			<?php else : ?>
+				<div class="ems-eoi-table-wrapper">
+					<table class="ems-table ems-eoi-table">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Event', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Submitted', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Status', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Preferred Level', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Actions', 'event-management-system' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $eois as $eoi ) : ?>
+								<?php
+								$event       = get_post( $eoi->event_id );
+								$event_title = $event ? $event->post_title : __( 'Unknown Event', 'event-management-system' );
+								$status_data = $this->get_eoi_status_data( $eoi->status );
+								?>
+								<tr>
+									<td data-label="<?php esc_attr_e( 'Event', 'event-management-system' ); ?>">
+										<strong><?php echo esc_html( $event_title ); ?></strong>
+									</td>
+									<td data-label="<?php esc_attr_e( 'Submitted', 'event-management-system' ); ?>">
+										<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $eoi->submitted_at ) ) ); ?>
+									</td>
+									<td data-label="<?php esc_attr_e( 'Status', 'event-management-system' ); ?>">
+										<span class="ems-badge <?php echo esc_attr( $status_data['class'] ); ?>">
+											<?php echo esc_html( $status_data['label'] ); ?>
+										</span>
+									</td>
+									<td data-label="<?php esc_attr_e( 'Level', 'event-management-system' ); ?>">
+										<?php echo esc_html( ucfirst( str_replace( array( '-', '_' ), ' ', $eoi->preferred_level ) ) ); ?>
+									</td>
+									<td data-label="<?php esc_attr_e( 'Actions', 'event-management-system' ); ?>">
+										<button type="button" class="ems-button ems-button-small ems-eoi-view-details" data-eoi-id="<?php echo esc_attr( $eoi->id ); ?>">
+											<?php esc_html_e( 'View Details', 'event-management-system' ); ?>
+										</button>
+									</td>
+								</tr>
+								<tr class="ems-eoi-details-row">
+									<td colspan="5">
+										<div class="ems-eoi-details" id="ems-eoi-details-<?php echo esc_attr( $eoi->id ); ?>" style="display: none;"></div>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	// =========================================================================
+	// Helper Methods
+	// =========================================================================
+
+	/**
+	 * Render a profile field in view mode
+	 *
+	 * @since 1.5.0
+	 * @param string $label Field label.
+	 * @param string $value Field value.
+	 * @param string $type  Display type (text, url, email).
+	 * @return void
+	 */
+	private function render_profile_field( $label, $value, $type = 'text' ) {
+		?>
+		<div class="ems-profile-field">
+			<dt><?php echo esc_html( $label ); ?></dt>
+			<dd>
+				<?php if ( empty( $value ) ) : ?>
+					<span class="ems-profile-empty"><?php esc_html_e( 'Not provided', 'event-management-system' ); ?></span>
+				<?php elseif ( 'url' === $type ) : ?>
+					<a href="<?php echo esc_url( $value ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $value ); ?></a>
+				<?php elseif ( 'email' === $type ) : ?>
+					<a href="mailto:<?php echo esc_attr( $value ); ?>"><?php echo esc_html( $value ); ?></a>
+				<?php else : ?>
+					<?php echo nl2br( esc_html( $value ) ); ?>
+				<?php endif; ?>
+			</dd>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render an edit form field
+	 *
+	 * @since 1.5.0
+	 * @param string $name  Field name.
+	 * @param string $label Field label.
+	 * @param string $value Current value.
+	 * @param string $type  Input type.
+	 * @return void
+	 */
+	private function render_edit_field( $name, $label, $value, $type = 'text' ) {
+		?>
+		<div class="ems-form-group">
+			<label for="ems-profile-<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label>
+			<input type="<?php echo esc_attr( $type ); ?>"
+				   id="ems-profile-<?php echo esc_attr( $name ); ?>"
+				   name="<?php echo esc_attr( $name ); ?>"
+				   value="<?php echo esc_attr( $value ); ?>"
+				   class="ems-form-control" />
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get EOI status display data
+	 *
+	 * @since 1.5.0
+	 * @param string $status Status string.
+	 * @return array Array with 'label' and 'class' keys.
+	 */
+	private function get_eoi_status_data( $status ) {
+		$map = array(
+			'pending'        => array(
+				'label' => __( 'Pending Review', 'event-management-system' ),
+				'class' => 'ems-badge-eoi-pending',
+			),
+			'approved'       => array(
+				'label' => __( 'Approved', 'event-management-system' ),
+				'class' => 'ems-badge-eoi-approved',
+			),
+			'rejected'       => array(
+				'label' => __( 'Declined', 'event-management-system' ),
+				'class' => 'ems-badge-eoi-rejected',
+			),
+			'info_requested' => array(
+				'label' => __( 'Info Requested', 'event-management-system' ),
+				'class' => 'ems-badge-eoi-info',
+			),
+		);
+
+		return isset( $map[ $status ] ) ? $map[ $status ] : array(
+			'label' => ucfirst( $status ),
+			'class' => 'ems-badge-primary',
+		);
+	}
+
+	/**
+	 * Get level info for a sponsor's assignment on an event
+	 *
+	 * Queries the sponsorship_levels table to get level name, colour, value, and recognition.
+	 *
+	 * @since 1.5.0
+	 * @param int    $event_id      Event post ID.
+	 * @param string $sponsor_level Level name/slug from sponsor_events table.
+	 * @return array|null Level info array or null if not found.
+	 */
+	private function get_event_level_info( $event_id, $sponsor_level ) {
+		if ( empty( $sponsor_level ) ) {
+			return null;
+		}
+
+		$levels = $this->levels_api->get_event_levels( $event_id );
+		if ( empty( $levels ) ) {
+			return null;
+		}
+
+		// Match by slug or name (case-insensitive)
+		foreach ( $levels as $level ) {
+			if ( $level->level_slug === $sponsor_level
+				|| strtolower( $level->level_name ) === strtolower( $sponsor_level )
+			) {
+				return array(
+					'name'             => $level->level_name,
+					'slug'             => $level->level_slug,
+					'colour'           => $level->colour,
+					'value_aud'        => $level->value_aud,
+					'recognition_text' => $level->recognition_text,
+				);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get contrast colour for text on a given background colour
+	 *
+	 * @since 1.5.0
+	 * @param string $hex_colour Hex colour code.
+	 * @return string Either '#ffffff' or '#333333'.
+	 */
+	private function get_contrast_colour( $hex_colour ) {
+		$hex = ltrim( $hex_colour, '#' );
+		if ( strlen( $hex ) === 3 ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+
+		$r = hexdec( substr( $hex, 0, 2 ) );
+		$g = hexdec( substr( $hex, 2, 2 ) );
+		$b = hexdec( substr( $hex, 4, 2 ) );
+
+		// Calculate relative luminance
+		$luminance = ( 0.299 * $r + 0.587 * $g + 0.114 * $b ) / 255;
+
+		return $luminance > 0.5 ? '#333333' : '#ffffff';
+	}
+
+	// =========================================================================
+	// Shortcodes: Standalone Sponsor Files
+	// =========================================================================
+
+	/**
+	 * Sponsor files list shortcode
+	 *
+	 * Renders a list of files for a specific sponsor/event.
+	 *
+	 * Usage: [ems_sponsor_files sponsor_id="123" event_id="456"]
+	 *
+	 * @since 1.4.0
+	 * @param array $atts Shortcode attributes.
+	 * @return string Files list HTML.
+	 */
+	public function sponsor_files_shortcode( $atts ) {
+		$atts = shortcode_atts( array(
+			'sponsor_id' => 0,
+			'event_id'   => 0,
+		), $atts, 'ems_sponsor_files' );
+
+		$sponsor_id = absint( $atts['sponsor_id'] );
+		$event_id   = absint( $atts['event_id'] );
+
+		if ( ! $sponsor_id ) {
+			return '<p>' . esc_html__( 'Invalid sponsor ID', 'event-management-system' ) . '</p>';
+		}
+
+		$files = $this->sponsor_portal->get_sponsor_files( $sponsor_id, $event_id );
+
+		if ( empty( $files ) ) {
+			return '<p>' . esc_html__( 'No files available.', 'event-management-system' ) . '</p>';
+		}
+
+		ob_start();
+		?>
+		<div class="ems-sponsor-files-widget">
+			<h3><?php esc_html_e( 'Sponsor Files', 'event-management-system' ); ?></h3>
+			<ul class="ems-files-list">
+				<?php foreach ( $files as $file ) : ?>
+					<li>
+						<a href="<?php echo esc_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ) ); ?>" target="_blank">
+							<?php echo esc_html( $file->file_name ); ?>
+						</a>
+						<span class="ems-file-size">(<?php echo esc_html( size_format( $file->file_size ) ); ?>)</span>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	// =========================================================================
+	// AJAX Handlers
+	// =========================================================================
+
+	/**
+	 * AJAX handler for sponsor file upload
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public function ajax_upload_sponsor_file() {
+		check_ajax_referer( 'ems_public_nonce', 'nonce' );
+
+		try {
+			// Sanitize POST data
+			$sponsor_id  = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
+			$event_id    = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+			$description = isset( $_POST['file_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['file_description'] ) ) : '';
+
+			if ( ! $sponsor_id || ! $event_id ) {
+				wp_send_json_error( __( 'Invalid parameters', 'event-management-system' ) );
+			}
+
+			// Check if file was uploaded
+			if ( ! isset( $_FILES['sponsor_file'] ) || empty( $_FILES['sponsor_file']['name'] ) ) {
+				wp_send_json_error( __( 'No file uploaded', 'event-management-system' ) );
+			}
+
+			// Sanitize file data
+			$file_data = array(
+				'name'     => sanitize_file_name( $_FILES['sponsor_file']['name'] ),
+				'type'     => sanitize_mime_type( $_FILES['sponsor_file']['type'] ),
+				'tmp_name' => $_FILES['sponsor_file']['tmp_name'],
+				'error'    => $_FILES['sponsor_file']['error'],
+				'size'     => absint( $_FILES['sponsor_file']['size'] ),
+			);
+
+			// Upload file
+			$result = $this->sponsor_portal->upload_sponsor_file(
+				$file_data,
+				$sponsor_id,
+				$event_id,
+				array(
+					'description' => $description,
+					'visibility'  => 'private',
+				)
+			);
+
+			if ( $result['success'] ) {
+				wp_send_json_success( $result );
+			} else {
+				wp_send_json_error( $result['message'] );
+			}
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in ajax_upload_sponsor_file: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			wp_send_json_error( __( 'An error occurred during file upload', 'event-management-system' ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for sponsor file deletion
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public function ajax_delete_sponsor_file() {
+		check_ajax_referer( 'ems_public_nonce', 'nonce' );
+
+		try {
+			$file_id = isset( $_POST['file_id'] ) ? absint( $_POST['file_id'] ) : 0;
+
+			if ( ! $file_id ) {
+				wp_send_json_error( __( 'Invalid file ID', 'event-management-system' ) );
+			}
+
+			$result = $this->sponsor_portal->delete_sponsor_file( $file_id );
+
+			if ( $result['success'] ) {
+				wp_send_json_success( $result['message'] );
+			} else {
+				wp_send_json_error( $result['message'] );
+			}
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in ajax_delete_sponsor_file: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			wp_send_json_error( __( 'An error occurred during file deletion', 'event-management-system' ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for saving sponsor profile
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public function ajax_save_sponsor_profile() {
+		check_ajax_referer( 'ems_public_nonce', 'nonce' );
+
+		try {
+			$sponsor_id = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
+
+			if ( ! $sponsor_id ) {
+				wp_send_json_error( __( 'Invalid sponsor ID', 'event-management-system' ) );
+			}
+
+			// Collect profile fields from POST
+			$profile_fields = array(
+				'legal_name', 'trading_name', 'abn', 'acn',
+				'registered_address', 'website_url', 'country', 'parent_company',
+				'contact_name', 'contact_role', 'contact_email', 'contact_phone',
+				'signatory_name', 'signatory_title', 'signatory_email',
+				'marketing_contact_name', 'marketing_contact_email',
+			);
+
+			$data = array();
+			foreach ( $profile_fields as $field ) {
+				if ( isset( $_POST[ $field ] ) ) {
+					$data[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				}
+			}
+
+			// Special handling for textarea fields
+			if ( isset( $_POST['registered_address'] ) ) {
+				$data['registered_address'] = sanitize_textarea_field( wp_unslash( $_POST['registered_address'] ) );
+			}
+
+			// Special handling for email fields
+			$email_fields = array( 'contact_email', 'signatory_email', 'marketing_contact_email' );
+			foreach ( $email_fields as $email_field ) {
+				if ( isset( $data[ $email_field ] ) ) {
+					$data[ $email_field ] = sanitize_email( $data[ $email_field ] );
+				}
+			}
+
+			// Special handling for URL fields
+			if ( isset( $data['website_url'] ) ) {
+				$data['website_url'] = esc_url_raw( $data['website_url'] );
+			}
+
+			$result = $this->sponsor_portal->update_sponsor_profile( $sponsor_id, $data );
+
+			if ( $result['success'] ) {
+				wp_send_json_success( $result );
+			} else {
+				wp_send_json_error( $result['message'] );
+			}
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in ajax_save_sponsor_profile: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			wp_send_json_error( __( 'An error occurred while saving your profile', 'event-management-system' ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for loading EOI details
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public function ajax_get_eoi_details() {
+		check_ajax_referer( 'ems_public_nonce', 'nonce' );
+
+		try {
+			$eoi_id = isset( $_POST['eoi_id'] ) ? absint( $_POST['eoi_id'] ) : 0;
+
+			if ( ! $eoi_id ) {
+				wp_send_json_error( __( 'Invalid application ID', 'event-management-system' ) );
+			}
+
+			// Get current user's sponsor ID
+			$sponsor_id = $this->sponsor_portal->get_user_sponsor_id( get_current_user_id() );
+			if ( ! $sponsor_id ) {
+				wp_send_json_error( __( 'No sponsor profile found', 'event-management-system' ) );
+			}
+
+			// Get EOI with ownership check
+			$eoi = $this->sponsor_portal->get_sponsor_eoi( $eoi_id, $sponsor_id );
+			if ( ! $eoi ) {
+				wp_send_json_error( __( 'Application not found', 'event-management-system' ) );
+			}
+
+			// Build HTML for EOI details
+			$html = $this->build_eoi_details_html( $eoi );
+
+			wp_send_json_success( array( 'html' => $html ) );
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in ajax_get_eoi_details: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			wp_send_json_error( __( 'An error occurred while loading application details', 'event-management-system' ) );
+		}
+	}
+
+	/**
+	 * Build HTML for EOI detail display
+	 *
+	 * @since 1.5.0
+	 * @param object $eoi EOI database row.
+	 * @return string HTML content.
+	 */
+	private function build_eoi_details_html( $eoi ) {
+		$event       = get_post( $eoi->event_id );
+		$event_title = $event ? $event->post_title : __( 'Unknown Event', 'event-management-system' );
+
+		ob_start();
+		?>
+		<div class="ems-eoi-detail-content">
+			<?php if ( ! empty( $eoi->review_notes ) ) : ?>
+				<div class="ems-notice <?php echo 'info_requested' === $eoi->status ? 'ems-notice-warning' : 'ems-notice-info'; ?>">
+					<strong><?php esc_html_e( 'Reviewer Notes:', 'event-management-system' ); ?></strong><br />
+					<?php echo nl2br( esc_html( $eoi->review_notes ) ); ?>
+				</div>
+			<?php endif; ?>
+
+			<div class="ems-eoi-detail-grid">
+				<div class="ems-eoi-detail-section">
+					<h4><?php esc_html_e( 'Commitment & Preferences', 'event-management-system' ); ?></h4>
+					<dl class="ems-eoi-detail-list">
+						<div class="ems-eoi-detail-item">
+							<dt><?php esc_html_e( 'Preferred Level', 'event-management-system' ); ?></dt>
+							<dd><?php echo esc_html( ucfirst( str_replace( array( '-', '_' ), ' ', $eoi->preferred_level ) ) ); ?></dd>
+						</div>
+						<?php if ( ! empty( $eoi->estimated_value ) ) : ?>
+							<div class="ems-eoi-detail-item">
+								<dt><?php esc_html_e( 'Estimated Value', 'event-management-system' ); ?></dt>
+								<dd><?php echo esc_html( '$' . number_format( (float) $eoi->estimated_value, 2 ) . ' AUD' ); ?></dd>
+							</div>
+						<?php endif; ?>
+						<?php if ( ! empty( $eoi->contribution_nature ) ) : ?>
+							<div class="ems-eoi-detail-item">
+								<dt><?php esc_html_e( 'Contribution Nature', 'event-management-system' ); ?></dt>
+								<dd><?php echo esc_html( $eoi->contribution_nature ); ?></dd>
+							</div>
+						<?php endif; ?>
+						<?php if ( ! empty( $eoi->duration_interest ) ) : ?>
+							<div class="ems-eoi-detail-item">
+								<dt><?php esc_html_e( 'Duration of Interest', 'event-management-system' ); ?></dt>
+								<dd><?php echo esc_html( ucfirst( str_replace( '_', ' ', $eoi->duration_interest ) ) ); ?></dd>
+							</div>
+						<?php endif; ?>
+					</dl>
+				</div>
+
+				<div class="ems-eoi-detail-section">
+					<h4><?php esc_html_e( 'Exclusivity', 'event-management-system' ); ?></h4>
+					<dl class="ems-eoi-detail-list">
+						<div class="ems-eoi-detail-item">
+							<dt><?php esc_html_e( 'Exclusivity Requested', 'event-management-system' ); ?></dt>
+							<dd><?php echo esc_html( $eoi->exclusivity_requested ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) ); ?></dd>
+						</div>
+						<?php if ( $eoi->exclusivity_requested && ! empty( $eoi->exclusivity_category ) ) : ?>
+							<div class="ems-eoi-detail-item">
+								<dt><?php esc_html_e( 'Category', 'event-management-system' ); ?></dt>
+								<dd><?php echo esc_html( $eoi->exclusivity_category ); ?></dd>
+							</div>
+						<?php endif; ?>
+					</dl>
+				</div>
+
+				<div class="ems-eoi-detail-section">
+					<h4><?php esc_html_e( 'Recognition & Visibility', 'event-management-system' ); ?></h4>
+					<dl class="ems-eoi-detail-list">
+						<?php if ( ! empty( $eoi->recognition_elements ) ) : ?>
+							<div class="ems-eoi-detail-item">
+								<dt><?php esc_html_e( 'Recognition Elements', 'event-management-system' ); ?></dt>
+								<dd><?php echo esc_html( $eoi->recognition_elements ); ?></dd>
+							</div>
+						<?php endif; ?>
+						<div class="ems-eoi-detail-item">
+							<dt><?php esc_html_e( 'Trade Display', 'event-management-system' ); ?></dt>
+							<dd><?php echo esc_html( $eoi->trade_display_requested ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) ); ?></dd>
+						</div>
+					</dl>
+				</div>
+			</div>
+
+			<?php if ( $eoi->reviewed_at ) : ?>
+				<div class="ems-eoi-review-info">
+					<small>
+						<?php
+						echo esc_html( sprintf(
+							/* translators: %s: date */
+							__( 'Reviewed on %s', 'event-management-system' ),
+							date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $eoi->reviewed_at ) )
+						) );
+						?>
+					</small>
+				</div>
+			<?php endif; ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
 }

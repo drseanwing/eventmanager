@@ -511,6 +511,116 @@ class EMS_Validator {
 	}
 
 	/**
+	 * Validate Australian Business Number (ABN)
+	 *
+	 * Uses the official ABN check digit algorithm:
+	 * 1. Subtract 1 from the first digit
+	 * 2. Multiply each digit by its weight: [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+	 * 3. Sum the products
+	 * 4. If sum mod 89 == 0, the ABN is valid
+	 *
+	 * @since 1.5.0
+	 * @param string $abn ABN to validate (can include spaces/dashes)
+	 * @return bool|WP_Error True if valid, WP_Error if invalid
+	 */
+	public function validate_abn( $abn ) {
+		if ( empty( $abn ) ) {
+			return true; // ABN is optional
+		}
+
+		// Strip spaces and dashes
+		$cleaned = preg_replace( '/[\s-]/', '', $abn );
+
+		// Must be exactly 11 digits
+		if ( ! preg_match( '/^\d{11}$/', $cleaned ) ) {
+			return new WP_Error( 'invalid_abn_format', __( 'ABN must be 11 digits.', 'event-management-system' ) );
+		}
+
+		// Convert to array of integers
+		$digits = array_map( 'intval', str_split( $cleaned ) );
+
+		// Subtract 1 from first digit
+		$digits[0] = $digits[0] - 1;
+
+		// Weighting factors
+		$weights = array( 10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 );
+
+		// Calculate weighted sum
+		$sum = 0;
+		for ( $i = 0; $i < 11; $i++ ) {
+			$sum += $digits[ $i ] * $weights[ $i ];
+		}
+
+		// Check if sum is divisible by 89
+		if ( 0 !== ( $sum % 89 ) ) {
+			$this->logger->warning(
+				'Invalid ABN check digit attempted',
+				EMS_Logger::CONTEXT_SECURITY,
+				array( 'abn' => $abn )
+			);
+			return new WP_Error( 'invalid_abn', __( 'The ABN provided is invalid. Please check the number and try again.', 'event-management-system' ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Validate Australian Company Number (ACN)
+	 *
+	 * Uses the official ACN check digit algorithm:
+	 * 1. Multiply first 8 digits by weights: [8, 7, 6, 5, 4, 3, 2, 1]
+	 * 2. Sum the products
+	 * 3. Remainder = sum mod 10
+	 * 4. Check digit = (10 - remainder) mod 10
+	 * 5. If check digit matches 9th digit, the ACN is valid
+	 *
+	 * @since 1.5.0
+	 * @param string $acn ACN to validate (can include spaces/dashes)
+	 * @return bool|WP_Error True if valid, WP_Error if invalid
+	 */
+	public function validate_acn( $acn ) {
+		if ( empty( $acn ) ) {
+			return true; // ACN is optional
+		}
+
+		// Strip spaces and dashes
+		$cleaned = preg_replace( '/[\s-]/', '', $acn );
+
+		// Must be exactly 9 digits
+		if ( ! preg_match( '/^\d{9}$/', $cleaned ) ) {
+			return new WP_Error( 'invalid_acn_format', __( 'ACN must be 9 digits.', 'event-management-system' ) );
+		}
+
+		// Convert to array of integers
+		$digits = array_map( 'intval', str_split( $cleaned ) );
+
+		// Weighting factors for first 8 digits
+		$weights = array( 8, 7, 6, 5, 4, 3, 2, 1 );
+
+		// Calculate weighted sum
+		$sum = 0;
+		for ( $i = 0; $i < 8; $i++ ) {
+			$sum += $digits[ $i ] * $weights[ $i ];
+		}
+
+		// Calculate check digit
+		$remainder   = $sum % 10;
+		$check_digit = ( 10 - $remainder ) % 10;
+
+		// Verify against 9th digit
+		if ( $check_digit !== $digits[8] ) {
+			$this->logger->warning(
+				'Invalid ACN check digit attempted',
+				EMS_Logger::CONTEXT_SECURITY,
+				array( 'acn' => $acn )
+			);
+			return new WP_Error( 'invalid_acn', __( 'The ACN provided is invalid. Please check the number and try again.', 'event-management-system' ) );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Validate promo code format
 	 *
 	 * @since 1.0.0

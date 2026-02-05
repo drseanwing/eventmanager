@@ -2181,3 +2181,456 @@
         flex: none;
     }
 }
+
+/* ==========================================================================
+   Sponsor Portal Enhancements (Phase 8)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Portal Tab Navigation
+   -------------------------------------------------------------------------- */
+
+.ems-portal-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--ems-color-border);
+    margin-bottom: var(--ems-spacing-xl);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ems-portal-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ems-spacing-xs);
+    padding: var(--ems-spacing-md) var(--ems-spacing-lg);
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    cursor: pointer;
+    font-family: var(--ems-font-heading);
+    font-size: var(--ems-font-size-base);
+    font-weight: 500;
+    color: var(--ems-color-text-light);
+    white-space: nowrap;
+    transition: color var(--ems-transition), border-color var(--ems-transition);
+    margin-bottom: -2px;
+}
+
+.ems-portal-tab:hover {
+    color: var(--ems-color-text-dark);
+    border-bottom-color: var(--ems-color-border);
+}
+
+.ems-portal-tab--active {
+    color: var(--ems-color-accent);
+    border-bottom-color: var(--ems-color-accent);
+    font-weight: 600;
+}
+
+.ems-portal-tab:focus-visible {
+    outline: 2px solid var(--ems-color-accent);
+    outline-offset: -2px;
+}
+
+.ems-portal-tab__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--ems-color-accent);
+    color: var(--ems-color-text-white);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Tab Content */
+.ems-portal-tab-content {
+    display: none;
+}
+
+.ems-portal-tab-content--active {
+    display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Organisation Profile (Task 8.1)
+   -------------------------------------------------------------------------- */
+
+.ems-sponsor-profile-section {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-profile-header h2 {
+    margin: 0;
+    font-family: var(--ems-font-heading);
+}
+
+.ems-profile-section {
+    margin-bottom: var(--ems-spacing-xl);
+    padding-bottom: var(--ems-spacing-lg);
+    border-bottom: 1px solid var(--ems-color-border);
+}
+
+.ems-profile-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.ems-profile-section h3 {
+    font-family: var(--ems-font-heading);
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+    margin: 0 0 var(--ems-spacing-md) 0;
+    padding-bottom: var(--ems-spacing-sm);
+    border-bottom: 2px solid var(--ems-color-accent);
+}
+
+.ems-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--ems-spacing-sm) var(--ems-spacing-lg);
+}
+
+.ems-profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--ems-spacing-sm) 0;
+}
+
+.ems-profile-field dt {
+    font-size: var(--ems-font-size-small);
+    font-weight: 600;
+    color: var(--ems-color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ems-profile-field dd {
+    margin: 0;
+    color: var(--ems-color-text);
+    word-break: break-word;
+}
+
+.ems-profile-field dd a {
+    color: var(--ems-color-accent);
+    text-decoration: none;
+}
+
+.ems-profile-field dd a:hover {
+    text-decoration: underline;
+}
+
+.ems-profile-empty {
+    color: var(--ems-color-text-light);
+    font-style: italic;
+}
+
+/* Profile Edit Mode */
+.ems-hidden {
+    display: none !important;
+}
+
+.ems-profile-actions {
+    display: flex;
+    gap: var(--ems-spacing-md);
+    margin-top: var(--ems-spacing-lg);
+    padding-top: var(--ems-spacing-lg);
+    border-top: 1px solid var(--ems-color-border);
+}
+
+.ems-profile-save-status {
+    margin-top: var(--ems-spacing-md);
+}
+
+/* --------------------------------------------------------------------------
+   EOI Status Badges (Task 8.2)
+   -------------------------------------------------------------------------- */
+
+.ems-badge-eoi-pending {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.ems-badge-eoi-approved {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.ems-badge-eoi-rejected {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.ems-badge-eoi-info {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+/* --------------------------------------------------------------------------
+   Sponsorship Applications Table (Task 8.2)
+   -------------------------------------------------------------------------- */
+
+.ems-sponsor-applications-section {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-sponsor-applications-section h2 {
+    font-family: var(--ems-font-heading);
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-eoi-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ems-eoi-table {
+    min-width: 600px;
+}
+
+.ems-eoi-details-row {
+    background: transparent !important;
+}
+
+.ems-eoi-details-row td {
+    padding: 0 !important;
+    border-bottom: none !important;
+}
+
+.ems-eoi-details-row:hover td {
+    background: transparent !important;
+}
+
+.ems-eoi-details {
+    padding: var(--ems-spacing-lg);
+    background: var(--ems-color-background-alt);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    margin: var(--ems-spacing-sm) var(--ems-spacing-md) var(--ems-spacing-md);
+}
+
+/* EOI Detail Content (AJAX loaded) */
+.ems-eoi-detail-content {
+    padding: var(--ems-spacing-sm) 0;
+}
+
+.ems-eoi-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--ems-spacing-lg);
+}
+
+.ems-eoi-detail-section {
+    background: var(--ems-color-background);
+    padding: var(--ems-spacing-md);
+    border-radius: var(--ems-border-radius);
+    border: 1px solid var(--ems-color-border);
+}
+
+.ems-eoi-detail-section h4 {
+    margin: 0 0 var(--ems-spacing-md) 0;
+    font-family: var(--ems-font-heading);
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+    padding-bottom: var(--ems-spacing-sm);
+    border-bottom: 1px solid var(--ems-color-border);
+}
+
+.ems-eoi-detail-list {
+    margin: 0;
+    padding: 0;
+}
+
+.ems-eoi-detail-item {
+    display: flex;
+    gap: var(--ems-spacing-sm);
+    padding: var(--ems-spacing-xs) 0;
+    border-bottom: 1px dotted var(--ems-color-border);
+}
+
+.ems-eoi-detail-item:last-child {
+    border-bottom: none;
+}
+
+.ems-eoi-detail-item dt {
+    flex: 0 0 45%;
+    font-size: var(--ems-font-size-small);
+    font-weight: 500;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-eoi-detail-item dd {
+    flex: 1;
+    margin: 0;
+    color: var(--ems-color-text);
+    word-break: break-word;
+    font-size: var(--ems-font-size-small);
+}
+
+.ems-eoi-review-info {
+    margin-top: var(--ems-spacing-md);
+    padding-top: var(--ems-spacing-sm);
+    border-top: 1px solid var(--ems-color-border);
+    color: var(--ems-color-text-light);
+    text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   Level Details in Event Cards (Task 8.3)
+   -------------------------------------------------------------------------- */
+
+.ems-event-level-details {
+    margin: var(--ems-spacing-md) 0;
+    padding: var(--ems-spacing-md);
+    background: var(--ems-color-background-alt);
+    border-radius: var(--ems-border-radius);
+    border-left: 3px solid var(--ems-color-accent);
+}
+
+.ems-event-level-value {
+    margin: 0 0 var(--ems-spacing-xs) 0;
+    font-size: var(--ems-font-size-base);
+    color: var(--ems-color-text);
+}
+
+.ems-event-level-value strong {
+    color: var(--ems-color-text-dark);
+}
+
+.ems-event-level-recognition {
+    margin: var(--ems-spacing-xs) 0 0 0;
+}
+
+.ems-event-level-recognition strong {
+    display: block;
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-dark);
+    margin-bottom: 2px;
+}
+
+.ems-event-level-recognition p {
+    margin: 0;
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text);
+    line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   Phase 8 Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .ems-portal-tabs {
+        gap: 0;
+    }
+
+    .ems-portal-tab {
+        padding: var(--ems-spacing-sm) var(--ems-spacing-md);
+        font-size: var(--ems-font-size-small);
+    }
+
+    .ems-profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--ems-spacing-sm);
+    }
+
+    .ems-profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ems-eoi-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ems-profile-actions {
+        flex-direction: column;
+    }
+
+    .ems-profile-actions .ems-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .ems-portal-tabs {
+        flex-direction: column;
+        border-bottom: none;
+        gap: 2px;
+    }
+
+    .ems-portal-tab {
+        border-bottom: none;
+        border-left: 3px solid transparent;
+        margin-bottom: 0;
+        padding: var(--ems-spacing-sm) var(--ems-spacing-md);
+    }
+
+    .ems-portal-tab--active {
+        border-left-color: var(--ems-color-accent);
+        background: var(--ems-color-background-alt);
+    }
+
+    .ems-portal-tab:hover {
+        border-bottom-color: transparent;
+        border-left-color: var(--ems-color-border);
+    }
+
+    .ems-eoi-table thead {
+        display: none;
+    }
+
+    .ems-eoi-table tr {
+        display: block;
+        margin-bottom: var(--ems-spacing-md);
+        border: 1px solid var(--ems-color-border);
+        border-radius: var(--ems-border-radius);
+    }
+
+    .ems-eoi-table td {
+        display: block;
+        text-align: right;
+        padding: var(--ems-spacing-xs) var(--ems-spacing-sm);
+        border-bottom: 1px dotted var(--ems-color-border);
+    }
+
+    .ems-eoi-table td:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 600;
+        color: var(--ems-color-text-dark);
+    }
+
+    .ems-eoi-details-row {
+        border: none !important;
+    }
+
+    .ems-eoi-details-row td {
+        padding: 0 !important;
+    }
+
+    .ems-eoi-detail-item {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .ems-eoi-detail-item dt {
+        flex: none;
+    }
+}

@@ -64,6 +64,9 @@ class EMS_CPT_Sponsor {
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_meta_boxes' ), 10, 2 );
 
+		// Status change logging
+		add_action( 'transition_post_status', array( $this, 'log_status_change' ), 10, 3 );
+
 		// Admin list table columns
 		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( $this, 'set_custom_columns' ) );
 		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( $this, 'render_custom_columns' ), 10, 2 );
@@ -525,6 +528,48 @@ class EMS_CPT_Sponsor {
 		$this->logger->info(
 			sprintf( 'Sponsor #%d meta saved by user #%d', $post_id, get_current_user_id() ),
 			EMS_Logger::CONTEXT_GENERAL
+		);
+	}
+
+	/**
+	 * Log sponsor status changes.
+	 *
+	 * @since 1.5.0
+	 * @param string  $new_status New post status.
+	 * @param string  $old_status Old post status.
+	 * @param WP_Post $post       Post object.
+	 */
+	public function log_status_change( $new_status, $old_status, $post ) {
+		// Only log for sponsor posts
+		if ( self::POST_TYPE !== $post->post_type ) {
+			return;
+		}
+
+		// Don't log if status hasn't changed
+		if ( $new_status === $old_status ) {
+			return;
+		}
+
+		// Don't log auto-drafts or new posts
+		if ( 'auto-draft' === $old_status || 'new' === $old_status || 'inherit' === $new_status ) {
+			return;
+		}
+
+		$this->logger->info(
+			sprintf(
+				'Sponsor #%d status changed from "%s" to "%s" by user #%d',
+				$post->ID,
+				$old_status,
+				$new_status,
+				get_current_user_id()
+			),
+			EMS_Logger::CONTEXT_GENERAL,
+			array(
+				'sponsor_id' => $post->ID,
+				'old_status' => $old_status,
+				'new_status' => $new_status,
+				'user_id'    => get_current_user_id(),
+			)
 		);
 	}
 

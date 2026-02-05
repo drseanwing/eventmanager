@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<phpunit
+	bootstrap="bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+	>
+	<testsuites>
+		<testsuite name="EMS Sponsorship System Tests">
+			<directory suffix="-test.php">./sponsorship</directory>
+		</testsuite>
+	</testsuites>
+	<filter>
+		<whitelist processUncoveredFilesFromWhitelist="true">
+			<directory suffix=".php">../plugin/includes/sponsor</directory>
+			<directory suffix=".php">../plugin/public/shortcodes</directory>
+			<exclude>
+				<directory>../plugin/vendor</directory>
+			</exclude>
+		</whitelist>
+	</filter>
+</phpunit>

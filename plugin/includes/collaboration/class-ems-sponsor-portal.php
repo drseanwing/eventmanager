@@ -855,6 +855,146 @@ class EMS_Sponsor_Portal {
 	}
 
 	/**
+	 * Update sponsor profile from portal
+	 *
+	 * Allows a sponsor to update their own organisation profile fields.
+	 * Validates that the current user owns the sponsor post.
+	 *
+	 * @since 1.5.0
+	 * @param int   $sponsor_id Sponsor post ID.
+	 * @param array $data       Associative array of profile data.
+	 * @return array Result with success status and message.
+	 */
+	public function update_sponsor_profile( $sponsor_id, $data ) {
+		$sponsor_id = absint( $sponsor_id );
+		$user_id    = get_current_user_id();
+
+		// Verify sponsor exists
+		$sponsor = get_post( $sponsor_id );
+		if ( ! $sponsor || 'ems_sponsor' !== $sponsor->post_type ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Invalid sponsor profile.', 'event-management-system' ),
+			);
+		}
+
+		// Verify current user owns this sponsor
+		$user_sponsor_id = $this->get_user_sponsor_id( $user_id );
+		if ( ! $user_sponsor_id || absint( $user_sponsor_id ) !== $sponsor_id ) {
+			$this->logger->warning(
+				"Unauthorized profile update attempt: user {$user_id} tried to edit sponsor {$sponsor_id}",
+				EMS_Logger::CONTEXT_SECURITY
+			);
+
+			return array(
+				'success' => false,
+				'message' => __( 'You do not have permission to edit this profile.', 'event-management-system' ),
+			);
+		}
+
+		// Whitelist of editable fields from portal (organisation + contact only)
+		$allowed_fields = array(
+			'legal_name', 'trading_name', 'abn', 'acn',
+			'registered_address', 'website_url', 'country', 'parent_company',
+			'contact_name', 'contact_role', 'contact_email', 'contact_phone',
+			'signatory_name', 'signatory_title', 'signatory_email',
+			'marketing_contact_name', 'marketing_contact_email',
+		);
+
+		$filtered_data = array();
+		foreach ( $data as $key => $value ) {
+			if ( in_array( $key, $allowed_fields, true ) ) {
+				$filtered_data[ $key ] = $value;
+			}
+		}
+
+		if ( empty( $filtered_data ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'No valid fields to update.', 'event-management-system' ),
+			);
+		}
+
+		// Use EMS_Sponsor_Meta::update_sponsor_meta for proper sanitization
+		$result = EMS_Sponsor_Meta::update_sponsor_meta( $sponsor_id, $filtered_data );
+
+		if ( is_wp_error( $result ) ) {
+			$this->logger->error(
+				'Profile update failed: ' . $result->get_error_message(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
+			);
+		}
+
+		$this->logger->info(
+			"Sponsor {$sponsor_id} profile updated by user {$user_id}",
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		return array(
+			'success' => true,
+			'message' => __( 'Profile updated successfully.', 'event-management-system' ),
+		);
+	}
+
+	/**
+	 * Get EOI submissions for a sponsor
+	 *
+	 * @since 1.5.0
+	 * @param int $sponsor_id Sponsor post ID.
+	 * @return array Array of EOI row objects.
+	 */
+	public function get_sponsor_eois( $sponsor_id ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ems_sponsor_eoi';
+
+		try {
+			$sponsor_id = absint( $sponsor_id );
+			if ( ! $sponsor_id ) {
+				return array();
+			}
+
+			$results = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$table} WHERE sponsor_id = %d ORDER BY submitted_at DESC",
+				$sponsor_id
+			) );
+
+			return $results ? $results : array();
+
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in get_sponsor_eois: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			return array();
+		}
+	}
+
+	/**
+	 * Get a single EOI by ID with sponsor ownership check
+	 *
+	 * @since 1.5.0
+	 * @param int $eoi_id     EOI record ID.
+	 * @param int $sponsor_id Sponsor post ID to verify ownership.
+	 * @return object|null EOI row object or null.
+	 */
+	public function get_sponsor_eoi( $eoi_id, $sponsor_id ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'ems_sponsor_eoi';
+
+		return $wpdb->get_row( $wpdb->prepare(
+			"SELECT * FROM {$table} WHERE id = %d AND sponsor_id = %d",
+			absint( $eoi_id ),
+			absint( $sponsor_id )
+		) );
+	}
+
+	/**
 	 * Get sponsor statistics
 	 *
 	 * Returns statistics for sponsor dashboard.
