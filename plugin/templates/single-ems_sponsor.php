@@ -23,6 +23,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'ems_get_contrast_colour' ) ) {
+	/**
+	 * Get contrasting text colour for a hex background.
+	 *
+	 * @since 1.5.0
+	 * @param string $hex Hex colour string.
+	 * @return string '#ffffff' or '#333333'.
+	 */
+	function ems_get_contrast_colour( $hex ) {
+		$hex = ltrim( $hex, '#' );
+		if ( strlen( $hex ) === 3 ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		$r = hexdec( substr( $hex, 0, 2 ) );
+		$g = hexdec( substr( $hex, 2, 2 ) );
+		$b = hexdec( substr( $hex, 4, 2 ) );
+		$luminance = ( 0.299 * $r + 0.587 * $g + 0.114 * $b ) / 255;
+		return $luminance > 0.5 ? '#333333' : '#ffffff';
+	}
+}
+
 get_header();
 ?>
 
@@ -51,7 +72,7 @@ get_header();
 				<?php if ( has_post_thumbnail() ) : ?>
 					<div class="ems-single-sponsor__logo">
 						<?php the_post_thumbnail( 'large', array(
-							'alt'   => esc_attr( get_the_title() ),
+							'alt'   => get_the_title(),
 							'class' => 'ems-single-sponsor__logo-img',
 						) ); ?>
 					</div>
@@ -120,10 +141,12 @@ get_header();
 									$text_colour = ems_get_contrast_colour( $colour );
 									$slug        = sanitize_title( $level_obj->level_name );
 									printf(
-										'<span class="ems-sponsor-level-pill ems-sponsor-level-pill--%s" style="background-color: %s; color: %s;">%s</span>',
+										'<span class="ems-sponsor-level-pill ems-sponsor-level-pill--%s" style="background-color: %s; color: %s;" aria-label="%s">%s</span>',
 										esc_attr( $slug ),
 										esc_attr( $colour ),
 										esc_attr( $text_colour ),
+										/* translators: %s: sponsor level name */
+										esc_attr( sprintf( __( 'Sponsorship level: %s', 'event-management-system' ), $level_obj->level_name ) ),
 										esc_html( $level_obj->level_name )
 									);
 								}
@@ -135,7 +158,10 @@ get_header();
 			<?php endif; ?>
 
 			<!-- Contact Information (public-facing subset) -->
-			<?php if ( $contact_name || $contact_email || $contact_phone ) : ?>
+			<?php
+			$show_contact = get_post_meta( $sponsor_id, '_ems_sponsor_show_contact_public', true );
+			if ( $show_contact && ( $contact_name || $contact_email || $contact_phone ) ) :
+			?>
 				<section class="ems-single-sponsor__contact" aria-label="<?php esc_attr_e( 'Contact Information', 'event-management-system' ); ?>">
 					<h2><?php esc_html_e( 'Contact Information', 'event-management-system' ); ?></h2>
 					<div class="ems-single-sponsor__contact-details">
@@ -169,24 +195,3 @@ get_header();
 
 <?php
 get_footer();
-
-if ( ! function_exists( 'ems_get_contrast_colour' ) ) {
-	/**
-	 * Get contrasting text colour for a hex background.
-	 *
-	 * @since 1.5.0
-	 * @param string $hex Hex colour string.
-	 * @return string '#ffffff' or '#333333'.
-	 */
-	function ems_get_contrast_colour( $hex ) {
-		$hex = ltrim( $hex, '#' );
-		if ( strlen( $hex ) === 3 ) {
-			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-		}
-		$r = hexdec( substr( $hex, 0, 2 ) );
-		$g = hexdec( substr( $hex, 2, 2 ) );
-		$b = hexdec( substr( $hex, 4, 2 ) );
-		$luminance = ( 0.299 * $r + 0.587 * $g + 0.114 * $b ) / 255;
-		return $luminance > 0.5 ? '#333333' : '#ffffff';
-	}
-}

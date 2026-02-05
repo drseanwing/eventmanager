@@ -1772,6 +1772,39 @@
     outline-offset: 2px;
 }
 
+/* Carousel Pause/Play Button */
+.ems-sponsor-carousel__pause {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    z-index: 2;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    transition: background var(--ems-transition);
+}
+
+.ems-sponsor-carousel__pause:hover,
+.ems-sponsor-carousel__pause:focus-visible {
+    background: rgba(0, 0, 0, 0.7);
+    outline: 2px solid var(--ems-color-accent, #0073aa);
+    outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .ems-sponsor-carousel__track {
+        transition: none !important;
+    }
+}
+
 /* ==========================================================================
    Sponsor Logo Gallery (Phase 7 - Task 7.3)
    ========================================================================== */

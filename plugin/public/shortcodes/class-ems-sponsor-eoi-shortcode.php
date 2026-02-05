@@ -149,7 +149,7 @@ class EMS_Sponsor_EOI_Shortcode {
 	private function check_authentication() {
 		if ( ! is_user_logged_in() ) {
 			$login_url     = wp_login_url( get_permalink() );
-			$onboarding_url = home_url( '/sponsor-onboarding/' );
+			$onboarding_url = $this->get_onboarding_url();
 
 			return '<div class="ems-notice ems-notice-warning">'
 				. sprintf(
@@ -162,7 +162,7 @@ class EMS_Sponsor_EOI_Shortcode {
 		}
 
 		if ( ! current_user_can( 'access_ems_sponsor_portal' ) ) {
-			$onboarding_url = home_url( '/sponsor-onboarding/' );
+			$onboarding_url = $this->get_onboarding_url();
 
 			return '<div class="ems-notice ems-notice-warning">'
 				. sprintf(
@@ -175,7 +175,7 @@ class EMS_Sponsor_EOI_Shortcode {
 
 		$sponsor_id = $this->get_current_sponsor_id();
 		if ( ! $sponsor_id ) {
-			$onboarding_url = home_url( '/sponsor-onboarding/' );
+			$onboarding_url = $this->get_onboarding_url();
 
 			return '<div class="ems-notice ems-notice-warning">'
 				. sprintf(
@@ -446,7 +446,7 @@ class EMS_Sponsor_EOI_Shortcode {
 
 		// Navigation (Previous + Submit).
 		$html .= '<div class="ems-form-navigation">';
-		$html .= '<button type="button" class="ems-btn ems-btn-secondary ems-form-prev" data-direction="prev">';
+		$html .= '<button type="submit" name="ems_form_direction" value="prev" class="ems-btn ems-btn-secondary ems-form-prev">';
 		$html .= esc_html__( 'Previous', 'event-management-system' );
 		$html .= '</button>';
 		$html .= '<button type="submit" name="ems_eoi_submit" value="1" class="ems-btn ems-btn-primary ems-form-submit">';
@@ -584,6 +584,7 @@ class EMS_Sponsor_EOI_Shortcode {
 	private function register_step_commitment( $form, $event_id ) {
 		$levels  = $this->levels_api->get_event_levels( $event_id );
 		$options = array();
+		$available_levels = array();
 
 		foreach ( $levels as $level ) {
 			if ( ! intval( $level->enabled ) ) {
@@ -601,6 +602,11 @@ class EMS_Sponsor_EOI_Shortcode {
 			$sold_out = ! is_null( $level->slots_total )
 				&& intval( $level->slots_filled ) >= intval( $level->slots_total );
 
+			// Skip sold-out levels entirely.
+			if ( $sold_out ) {
+				continue;
+			}
+
 			$label = sprintf(
 				'%s%s (%s %s)',
 				esc_html( $level->level_name ),
@@ -611,11 +617,8 @@ class EMS_Sponsor_EOI_Shortcode {
 					: __( 'slots', 'event-management-system' )
 			);
 
-			if ( $sold_out ) {
-				$label .= ' — ' . __( 'SOLD OUT', 'event-management-system' );
-			}
-
 			$options[ $level->level_slug ] = $label;
+			$available_levels[] = $level->level_slug;
 		}
 
 		$fields = array(
@@ -689,7 +692,7 @@ class EMS_Sponsor_EOI_Shortcode {
 		);
 
 		$validation_rules = array(
-			'preferred_level'    => array( 'required' ),
+			'preferred_level'    => array( 'required', array( 'in', $available_levels ) ),
 			'contribution_nature' => array( 'required' ),
 		);
 
@@ -1083,15 +1086,23 @@ class EMS_Sponsor_EOI_Shortcode {
 		);
 
 		if ( $result ) {
+			// Capture the insert ID before clearing state.
+			$eoi_id = $result;
+
 			// Clear form state.
 			$form->clear_state();
+
+			// Send notification emails.
+			$email_manager = new EMS_Email_Manager();
+			$email_manager->send_eoi_confirmation( $eoi_id );
+			$email_manager->send_eoi_admin_notification( $eoi_id );
 
 			$this->logger->info(
 				sprintf(
 					'Sponsor EOI submitted: sponsor_id=%d, event_id=%d, eoi_id=%d',
 					$sponsor_id,
 					$event_id,
-					$result
+					$eoi_id
 				),
 				EMS_Logger::CONTEXT_GENERAL
 			);
@@ -1245,5 +1256,27 @@ class EMS_Sponsor_EOI_Shortcode {
 	 */
 	private function get_current_sponsor_id() {
 		return $this->sponsor_portal->get_user_sponsor_id( get_current_user_id() );
+	}
+
+	/**
+	 * Get the onboarding page URL by searching for the shortcode.
+	 *
+	 * @since 1.5.0
+	 * @return string Onboarding page URL.
+	 */
+	private function get_onboarding_url() {
+		global $wpdb;
+		$page_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s AND post_content LIKE %s LIMIT 1",
+				'page',
+				'publish',
+				'%[ems_sponsor_onboarding%'
+			)
+		);
+		if ( $page_id ) {
+			return get_permalink( $page_id );
+		}
+		return home_url( '/sponsor-onboarding/' );
 	}
 }

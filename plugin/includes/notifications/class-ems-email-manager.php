@@ -1771,8 +1771,8 @@ class EMS_Email_Manager {
 			}
 
 			// Get sponsor meta data
-			$contact_email = get_post_meta( $sponsor_id, 'contact_email', true );
-			$contact_name  = get_post_meta( $sponsor_id, 'contact_name', true );
+			$contact_email = get_post_meta( $sponsor_id, '_ems_sponsor_contact_email', true );
+			$contact_name  = get_post_meta( $sponsor_id, '_ems_sponsor_contact_name', true );
 
 			if ( empty( $contact_email ) ) {
 				$this->logger->warning(
@@ -1783,7 +1783,7 @@ class EMS_Email_Manager {
 			}
 
 			// Get sponsor user account if exists
-			$user_id = get_post_meta( $sponsor_id, 'user_id', true );
+			$user_id = get_post_meta( $sponsor_id, '_ems_sponsor_user_id', true );
 			$user    = $user_id ? get_userdata( $user_id ) : null;
 
 			$to      = $contact_email;
@@ -1836,9 +1836,9 @@ class EMS_Email_Manager {
 
 			$message = $this->get_sponsor_onboarding_admin_template( array(
 				'sponsor_name'   => $sponsor->post_title,
-				'organisation'   => get_post_meta( $sponsor_id, 'organisation', true ),
-				'abn'            => get_post_meta( $sponsor_id, 'abn', true ),
-				'contact_email'  => get_post_meta( $sponsor_id, 'contact_email', true ),
+				'organisation'   => get_post_meta( $sponsor_id, '_ems_sponsor_legal_name', true ),
+				'abn'            => get_post_meta( $sponsor_id, '_ems_sponsor_abn', true ),
+				'contact_email'  => get_post_meta( $sponsor_id, '_ems_sponsor_contact_email', true ),
 				'admin_edit_url' => admin_url( 'post.php?post=' . $sponsor_id . '&action=edit' ),
 			) );
 
@@ -1884,8 +1884,8 @@ class EMS_Email_Manager {
 				return false;
 			}
 
-			$contact_email = get_post_meta( $eoi->sponsor_id, 'contact_email', true );
-			$contact_name  = get_post_meta( $eoi->sponsor_id, 'contact_name', true );
+			$contact_email = get_post_meta( $eoi->sponsor_id, '_ems_sponsor_contact_email', true );
+			$contact_name  = get_post_meta( $eoi->sponsor_id, '_ems_sponsor_contact_name', true );
 
 			if ( empty( $contact_email ) ) {
 				return false;
@@ -2018,11 +2018,18 @@ class EMS_Email_Manager {
 
 			// Get level details
 			$levels_manager = new EMS_Sponsorship_Levels();
-			$level_details  = $levels_manager->get_level_by_slug( $eoi->event_id, $assigned_level );
-			$recognition    = $level_details ? $level_details->recognition_text : '';
+			$levels = $levels_manager->get_event_levels( $eoi->event_id );
+			$level_details = null;
+			foreach ( $levels as $level ) {
+				if ( $level->level_slug === $assigned_level ) {
+					$level_details = $level;
+					break;
+				}
+			}
+			$recognition = $level_details ? $level_details->recognition_text : '';
 
-			$contact_email = get_post_meta( $eoi->sponsor_id, 'contact_email', true );
-			$contact_name  = get_post_meta( $eoi->sponsor_id, 'contact_name', true );
+			$contact_email = get_post_meta( $eoi->sponsor_id, '_ems_sponsor_contact_email', true );
+			$contact_name  = get_post_meta( $eoi->sponsor_id, '_ems_sponsor_contact_name', true );
 
 			if ( empty( $contact_email ) ) {
 				return false;
@@ -2085,8 +2092,8 @@ class EMS_Email_Manager {
 				return false;
 			}
 
-			$contact_email = get_post_meta( $eoi->sponsor_id, 'contact_email', true );
-			$contact_name  = get_post_meta( $eoi->sponsor_id, 'contact_name', true );
+			$contact_email = get_post_meta( $eoi->sponsor_id, '_ems_sponsor_contact_email', true );
+			$contact_name  = get_post_meta( $eoi->sponsor_id, '_ems_sponsor_contact_name', true );
 
 			if ( empty( $contact_email ) ) {
 				return false;
@@ -2141,8 +2148,8 @@ class EMS_Email_Manager {
 				return false;
 			}
 
-			$contact_email = get_post_meta( $sponsor_id, 'contact_email', true );
-			$contact_name  = get_post_meta( $sponsor_id, 'contact_name', true );
+			$contact_email = get_post_meta( $sponsor_id, '_ems_sponsor_contact_email', true );
+			$contact_name  = get_post_meta( $sponsor_id, '_ems_sponsor_contact_name', true );
 
 			if ( empty( $contact_email ) ) {
 				return false;

@@ -30,6 +30,7 @@
 		this.timer     = null;
 		this.isHovered = false;
 		this.totalSlides = this.slides.length;
+		this._resizeHandler = null;
 
 		if ( this.totalSlides === 0 ) {
 			return;
@@ -99,8 +100,7 @@
 				var dot = document.createElement( 'button' );
 				dot.className = 'ems-sponsor-carousel__dot';
 				dot.setAttribute( 'type', 'button' );
-				dot.setAttribute( 'role', 'tab' );
-				dot.setAttribute( 'aria-selected', i === 0 ? 'true' : 'false' );
+				dot.setAttribute( 'aria-current', i === 0 ? 'true' : 'false' );
 				dot.setAttribute( 'aria-label',
 					/* translators-like: Go to slide group N */
 					'Go to slide group ' + ( i + 1 )
@@ -134,7 +134,7 @@
 					var dot = e.target.closest( '.ems-sponsor-carousel__dot' );
 					if ( dot ) {
 						var index = parseInt( dot.getAttribute( 'data-index' ), 10 );
-						self.goTo( index );
+						self.goTo( index, true );
 					}
 				} );
 			}
@@ -166,29 +166,36 @@
 			}
 
 			// Responsive: recalculate on resize.
-			var resizeTimer;
-			window.addEventListener( 'resize', function() {
-				clearTimeout( resizeTimer );
-				resizeTimer = setTimeout( function() {
-					var prevVisible = self.visible;
-					self.calculateVisible();
-					if ( prevVisible !== self.visible ) {
-						self.buildDots();
-						if ( self.current > self.maxIndex ) {
-							self.current = self.maxIndex;
-						}
-						self.goTo( self.current );
+			this._resizeHandler = this.handleResize.bind( this );
+			window.addEventListener( 'resize', this._resizeHandler );
+		},
+
+		/**
+		 * Handle resize events (debounced).
+		 */
+		handleResize: function() {
+			var self = this;
+			clearTimeout( this._resizeTimer );
+			this._resizeTimer = setTimeout( function() {
+				var prevVisible = self.visible;
+				self.calculateVisible();
+				if ( prevVisible !== self.visible ) {
+					self.buildDots();
+					if ( self.current > self.maxIndex ) {
+						self.current = self.maxIndex;
 					}
-				}, 200 );
-			} );
+					self.goTo( self.current );
+				}
+			}, 200 );
 		},
 
 		/**
 		 * Navigate to a specific slide index.
 		 *
 		 * @param {number} index Slide index (0-based).
+		 * @param {boolean} isUserInteraction Whether this is from user interaction.
 		 */
-		goTo: function( index ) {
+		goTo: function( index, isUserInteraction ) {
 			if ( index < 0 ) {
 				index = this.maxIndex;
 			}
@@ -202,6 +209,13 @@
 			var offset = -( index * ( 100 / this.visible ) );
 			this.track.style.transform = 'translateX(' + offset + '%)';
 			this.track.style.transition = 'transform 0.4s ease';
+
+			// Update aria-live based on interaction type.
+			if ( isUserInteraction ) {
+				this.track.setAttribute( 'aria-live', 'polite' );
+			} else {
+				this.track.setAttribute( 'aria-live', 'off' );
+			}
 
 			// Update tabindex on slide links.
 			for ( var i = 0; i < this.totalSlides; i++ ) {
@@ -226,7 +240,7 @@
 		 * Go to the previous slide group.
 		 */
 		prev: function() {
-			this.goTo( this.current - 1 );
+			this.goTo( this.current - 1, true );
 			this.restartAutoPlay();
 		},
 
@@ -234,7 +248,7 @@
 		 * Go to the next slide group.
 		 */
 		next: function() {
-			this.goTo( this.current + 1 );
+			this.goTo( this.current + 1, true );
 			this.restartAutoPlay();
 		},
 
@@ -249,10 +263,10 @@
 			for ( var i = 0; i < dots.length; i++ ) {
 				if ( i === this.current ) {
 					dots[ i ].classList.add( 'ems-sponsor-carousel__dot--active' );
-					dots[ i ].setAttribute( 'aria-selected', 'true' );
+					dots[ i ].setAttribute( 'aria-current', 'true' );
 				} else {
 					dots[ i ].classList.remove( 'ems-sponsor-carousel__dot--active' );
-					dots[ i ].setAttribute( 'aria-selected', 'false' );
+					dots[ i ].setAttribute( 'aria-current', 'false' );
 				}
 			}
 		},
@@ -277,9 +291,13 @@
 			if ( this.isHovered || this.maxIndex === 0 ) {
 				return;
 			}
+			// Check for prefers-reduced-motion.
+			if ( window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) {
+				return;
+			}
 			var self = this;
 			this.timer = setInterval( function() {
-				self.next();
+				self.goTo( self.current + 1 );
 			}, self.speed );
 		},
 
@@ -300,6 +318,16 @@
 			this.stopAutoPlay();
 			if ( ! this.isHovered ) {
 				this.startAutoPlay();
+			}
+		},
+
+		/**
+		 * Destroy the carousel and clean up event listeners.
+		 */
+		destroy: function() {
+			this.stopAutoPlay();
+			if ( this._resizeHandler ) {
+				window.removeEventListener( 'resize', this._resizeHandler );
 			}
 		}
 	};

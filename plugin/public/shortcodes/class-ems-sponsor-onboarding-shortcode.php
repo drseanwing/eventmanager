@@ -676,7 +676,7 @@ class EMS_Sponsor_Onboarding_Shortcode {
 	 */
 	private function is_our_form() {
 		return isset( $_POST['ems_form_id'] )
-			&& $this->form_id === sanitize_key( $_POST['ems_form_id'] );
+			&& $this->form_id === sanitize_text_field( wp_unslash( $_POST['ems_form_id'] ) );
 	}
 
 	/**
@@ -690,7 +690,7 @@ class EMS_Sponsor_Onboarding_Shortcode {
 	 */
 	private function process_step() {
 		// Verify nonce
-		if ( ! isset( $_POST['ems_form_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['ems_form_nonce'] ), 'ems_form_' . $this->form_id ) ) {
+		if ( ! isset( $_POST['ems_form_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ems_form_nonce'] ) ), 'ems_form_' . $this->form_id ) ) {
 			return '<div class="ems-notice ems-notice-error">'
 				. esc_html__( 'Security verification failed. Please try again.', 'event-management-system' )
 				. '</div>';
@@ -701,7 +701,7 @@ class EMS_Sponsor_Onboarding_Shortcode {
 		$steps = $this->form->get_steps();
 
 		// Handle previous button
-		if ( isset( $_POST['ems_direction'] ) && 'prev' === sanitize_key( $_POST['ems_direction'] ) ) {
+		if ( isset( $_POST['ems_direction'] ) && 'prev' === sanitize_text_field( wp_unslash( $_POST['ems_direction'] ) ) ) {
 			if ( $current_step > 0 ) {
 				$this->form->set_current_step( $current_step - 1 );
 				$this->form->save_state();
@@ -934,14 +934,14 @@ class EMS_Sponsor_Onboarding_Shortcode {
 	 */
 	private function process_final_submission() {
 		// Verify nonce
-		if ( ! isset( $_POST['ems_form_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['ems_form_nonce'] ), 'ems_form_' . $this->form_id ) ) {
+		if ( ! isset( $_POST['ems_form_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ems_form_nonce'] ) ), 'ems_form_' . $this->form_id ) ) {
 			return '<div class="ems-notice ems-notice-error">'
 				. esc_html__( 'Security verification failed. Please try again.', 'event-management-system' )
 				. '</div>';
 		}
 
 		// Handle "Previous" button on review step
-		if ( isset( $_POST['ems_direction'] ) && 'prev' === sanitize_key( $_POST['ems_direction'] ) ) {
+		if ( isset( $_POST['ems_direction'] ) && 'prev' === sanitize_text_field( wp_unslash( $_POST['ems_direction'] ) ) ) {
 			$current = $this->form->get_current_step();
 			if ( $current > 0 ) {
 				$this->form->set_current_step( $current - 1 );
@@ -1023,6 +1023,17 @@ class EMS_Sponsor_Onboarding_Shortcode {
 			'first_name'   => isset( $contact_data['contact_name'] ) ? $contact_data['contact_name'] : '',
 		) );
 
+		// Generate password reset key
+		$reset_key = get_password_reset_key( $user );
+		if ( is_wp_error( $reset_key ) ) {
+			$this->logger->error(
+				'Failed to generate password reset key: ' . $reset_key->get_error_message(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+			// Fallback: still send welcome email but without reset link
+			$reset_key = '';
+		}
+
 		// --- Create Sponsor Post ---
 		$post_id = wp_insert_post( array(
 			'post_type'   => 'ems_sponsor',
@@ -1056,7 +1067,7 @@ class EMS_Sponsor_Onboarding_Shortcode {
 		$this->record_submission();
 
 		// --- Send Notification Emails ---
-		$this->send_welcome_email( $email, $legal_name, $password );
+		$this->send_welcome_email( $email, $legal_name, $reset_key );
 		$this->send_admin_notification( $legal_name, $email, $post_id );
 
 		// --- Log Success ---
@@ -1072,14 +1083,10 @@ class EMS_Sponsor_Onboarding_Shortcode {
 		return '<div class="ems-notice ems-notice-success">'
 			. '<h3>' . esc_html__( 'Application Submitted Successfully!', 'event-management-system' ) . '</h3>'
 			. '<p>' . esc_html__( 'Thank you for registering as a sponsor. Your application is now under review.', 'event-management-system' ) . '</p>'
-			. '<p>' . esc_html__( 'A confirmation email has been sent to your contact email address with your login credentials.', 'event-management-system' ) . '</p>'
-			. '<p>'
-			. sprintf(
-				/* translators: %s: login URL */
-				__( '<a href="%s" class="ems-btn ems-btn-primary">Log In to Your Sponsor Portal</a>', 'event-management-system' ),
-				esc_url( $login_url )
-			)
-			. '</p>'
+			. '<p>' . esc_html__( 'A confirmation email has been sent to your contact email address with a link to set your password.', 'event-management-system' ) . '</p>'
+			. '<p><a href="' . esc_url( $login_url ) . '" class="ems-btn ems-btn-primary">'
+			. esc_html__( 'Log In to Your Sponsor Portal', 'event-management-system' )
+			. '</a></p>'
 			. '</div>';
 	}
 
@@ -1232,12 +1239,13 @@ class EMS_Sponsor_Onboarding_Shortcode {
 				sprintf( 'Duplicate email detected during sponsor onboarding: %s', $email ),
 				EMS_Logger::CONTEXT_GENERAL
 			);
+			$login_url = wp_login_url();
 			return new WP_Error(
 				'duplicate_email',
 				sprintf(
 					/* translators: %s: login URL */
-					__( 'An account with this email address already exists. If you already have an account, please <a href="%s">log in</a> instead.', 'event-management-system' ),
-					esc_url( wp_login_url() )
+					__( 'An account with this email address already exists. If you already have an account, please log in instead: %s', 'event-management-system' ),
+					esc_url( $login_url )
 				)
 			);
 		}
@@ -1252,28 +1260,23 @@ class EMS_Sponsor_Onboarding_Shortcode {
 				'meta_query'     => array(
 					array(
 						'key'     => '_ems_sponsor_abn',
-						'compare' => 'EXISTS',
+						'value'   => $normalised_abn,
+						'compare' => '=',
 					),
 				),
-				'posts_per_page' => -1,
+				'posts_per_page' => 1,
 				'fields'         => 'ids',
 			) );
 
 			if ( $existing->have_posts() ) {
-				foreach ( $existing->posts as $existing_id ) {
-					$existing_abn = get_post_meta( $existing_id, '_ems_sponsor_abn', true );
-					$existing_abn = preg_replace( '/\s+/', '', $existing_abn );
-					if ( $existing_abn === $normalised_abn ) {
-						$this->logger->warning(
-							sprintf( 'Duplicate ABN detected during sponsor onboarding: %s', $abn ),
-							EMS_Logger::CONTEXT_GENERAL
-						);
-						return new WP_Error(
-							'duplicate_abn',
-							__( 'A sponsor organisation with this ABN is already registered. If you believe this is an error, please contact the administrator.', 'event-management-system' )
-						);
-					}
-				}
+				$this->logger->warning(
+					sprintf( 'Duplicate ABN detected during sponsor onboarding: %s', $abn ),
+					EMS_Logger::CONTEXT_GENERAL
+				);
+				return new WP_Error(
+					'duplicate_abn',
+					__( 'A sponsor organisation with this ABN is already registered. If you believe this is an error, please contact the administrator.', 'event-management-system' )
+				);
 			}
 
 			wp_reset_postdata();
@@ -1368,16 +1371,15 @@ class EMS_Sponsor_Onboarding_Shortcode {
 	/**
 	 * Send welcome email to the new sponsor.
 	 *
-	 * Contains login credentials and next steps.
+	 * Contains password reset link and next steps.
 	 *
 	 * @since 1.5.0
-	 * @param string $email     Recipient email.
-	 * @param string $org_name  Organisation name.
-	 * @param string $password  Generated password.
+	 * @param string $email      Recipient email.
+	 * @param string $org_name   Organisation name.
+	 * @param string $reset_key  Password reset key.
 	 * @return bool True if sent successfully.
 	 */
-	private function send_welcome_email( $email, $org_name, $password ) {
-		$login_url = wp_login_url();
+	private function send_welcome_email( $email, $org_name, $reset_key ) {
 		$site_name = get_bloginfo( 'name' );
 
 		$subject = sprintf(
@@ -1385,6 +1387,12 @@ class EMS_Sponsor_Onboarding_Shortcode {
 			__( 'Welcome to %s - Sponsor Registration Confirmed', 'event-management-system' ),
 			$site_name
 		);
+
+		// Build password reset URL
+		$reset_url = '';
+		if ( ! empty( $reset_key ) ) {
+			$reset_url = network_site_url( 'wp-login.php?action=rp&key=' . rawurlencode( $reset_key ) . '&login=' . rawurlencode( $email ), 'login' );
+		}
 
 		ob_start();
 		?>
@@ -1406,14 +1414,16 @@ class EMS_Sponsor_Onboarding_Shortcode {
 			<div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong><?php esc_html_e( 'Your Login Details:', 'event-management-system' ); ?></strong></p>
 				<p style="margin: 5px 0;"><strong><?php esc_html_e( 'Username:', 'event-management-system' ); ?></strong> <?php echo esc_html( $email ); ?></p>
-				<p style="margin: 5px 0;"><strong><?php esc_html_e( 'Password:', 'event-management-system' ); ?></strong> <?php echo esc_html( $password ); ?></p>
-				<p style="margin: 5px 0;"><strong><?php esc_html_e( 'Login URL:', 'event-management-system' ); ?></strong> <a href="<?php echo esc_url( $login_url ); ?>"><?php echo esc_html( $login_url ); ?></a></p>
+				<?php if ( ! empty( $reset_url ) ) : ?>
+					<p style="margin: 15px 0;">
+						<a href="<?php echo esc_url( $reset_url ); ?>" style="display:inline-block;padding:10px 20px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:4px;"><?php esc_html_e( 'Set Your Password', 'event-management-system' ); ?></a>
+					</p>
+				<?php endif; ?>
 			</div>
-
-			<p><strong><?php esc_html_e( 'Important:', 'event-management-system' ); ?></strong> <?php esc_html_e( 'Please change your password after your first login.', 'event-management-system' ); ?></p>
 
 			<p><strong><?php esc_html_e( 'Next Steps:', 'event-management-system' ); ?></strong></p>
 			<ul>
+				<li><?php esc_html_e( 'Click the "Set Your Password" button above to create your password.', 'event-management-system' ); ?></li>
 				<li><?php esc_html_e( 'Your application will be reviewed by the event management team.', 'event-management-system' ); ?></li>
 				<li><?php esc_html_e( 'Once approved, your sponsor profile will be activated.', 'event-management-system' ); ?></li>
 				<li><?php esc_html_e( 'You can then access the Sponsor Portal to manage your events and files.', 'event-management-system' ); ?></li>
@@ -1523,6 +1533,18 @@ class EMS_Sponsor_Onboarding_Shortcode {
 	 * @return string IP address.
 	 */
 	private function get_client_ip() {
+		/**
+		 * Filter whether to trust proxy headers for IP detection.
+		 *
+		 * @since 1.5.0
+		 * @param bool $trust_proxy Whether to trust proxy headers. Default false.
+		 */
+		$trust_proxy = apply_filters( 'ems_trust_proxy_headers', false );
+
+		if ( ! $trust_proxy ) {
+			return isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '0.0.0.0';
+		}
+
 		$ip_keys = array(
 			'HTTP_CF_CONNECTING_IP', // Cloudflare
 			'HTTP_X_FORWARDED_FOR',
