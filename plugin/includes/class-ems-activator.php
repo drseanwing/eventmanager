@@ -260,6 +260,64 @@ class EMS_Activator {
 			INDEX upload_date_idx (upload_date)
 		) $charset_collate;";
 
+		// Sponsorship levels table (Phase 4)
+		$sql_sponsorship_levels = "CREATE TABLE IF NOT EXISTS {$table_prefix}ems_sponsorship_levels (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			event_id BIGINT UNSIGNED NOT NULL,
+			level_name VARCHAR(100) NOT NULL,
+			level_slug VARCHAR(100) NOT NULL,
+			colour VARCHAR(7) NOT NULL DEFAULT '#CD7F32',
+			value_aud DECIMAL(10,2) DEFAULT NULL,
+			slots_total INT DEFAULT NULL,
+			slots_filled INT NOT NULL DEFAULT 0,
+			recognition_text TEXT DEFAULT NULL,
+			sort_order INT NOT NULL DEFAULT 0,
+			enabled TINYINT(1) NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			KEY event_id (event_id),
+			KEY event_level (event_id, level_slug)
+		) $charset_collate;";
+
+		// Sponsor EOI table (Phase 4)
+		$sql_sponsor_eoi = "CREATE TABLE IF NOT EXISTS {$table_prefix}ems_sponsor_eoi (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			sponsor_id BIGINT UNSIGNED NOT NULL,
+			event_id BIGINT UNSIGNED NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'pending',
+			preferred_level VARCHAR(100) DEFAULT NULL,
+			estimated_value DECIMAL(10,2) DEFAULT NULL,
+			contribution_nature TEXT DEFAULT NULL,
+			conditional_outcome TEXT DEFAULT NULL,
+			speaker_nomination TEXT DEFAULT NULL,
+			duration_interest VARCHAR(50) DEFAULT NULL,
+			exclusivity_requested TINYINT(1) NOT NULL DEFAULT 0,
+			exclusivity_category VARCHAR(255) DEFAULT NULL,
+			shared_presence_accepted TINYINT(1) NOT NULL DEFAULT 0,
+			competitor_objections TEXT DEFAULT NULL,
+			exclusivity_conditions TEXT DEFAULT NULL,
+			recognition_elements TEXT DEFAULT NULL,
+			trade_display_requested TINYINT(1) NOT NULL DEFAULT 0,
+			trade_display_requirements TEXT DEFAULT NULL,
+			representatives_count INT DEFAULT NULL,
+			product_samples TINYINT(1) NOT NULL DEFAULT 0,
+			promotional_material TINYINT(1) NOT NULL DEFAULT 0,
+			delegate_data_collection TINYINT(1) NOT NULL DEFAULT 0,
+			social_media_expectations TEXT DEFAULT NULL,
+			content_independence_acknowledged TINYINT(1) NOT NULL DEFAULT 0,
+			content_influence TEXT DEFAULT NULL,
+			therapeutic_claims TINYINT(1) NOT NULL DEFAULT 0,
+			material_review_required TINYINT(1) NOT NULL DEFAULT 0,
+			submitted_at DATETIME NOT NULL,
+			reviewed_at DATETIME DEFAULT NULL,
+			reviewed_by BIGINT UNSIGNED DEFAULT NULL,
+			review_notes TEXT DEFAULT NULL,
+			KEY sponsor_id (sponsor_id),
+			KEY event_id (event_id),
+			KEY status (status),
+			UNIQUE KEY sponsor_event (sponsor_id, event_id)
+		) $charset_collate;";
+
 		// Require WordPress upgrade functionality
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -271,6 +329,8 @@ class EMS_Activator {
 		dbDelta( $sql_notification_log );
 		dbDelta( $sql_sponsor_events );
 		dbDelta( $sql_sponsor_files );
+		dbDelta( $sql_sponsorship_levels );
+		dbDelta( $sql_sponsor_eoi );
 
 		// Run migrations for existing installations
 		self::run_migrations( $table_prefix );
@@ -578,6 +638,10 @@ class EMS_Activator {
 			$wpdb->prefix . 'ems_waitlist',
 			$wpdb->prefix . 'ems_abstract_reviews',
 			$wpdb->prefix . 'ems_notification_log',
+			$wpdb->prefix . 'ems_sponsor_events',
+			$wpdb->prefix . 'ems_sponsor_files',
+			$wpdb->prefix . 'ems_sponsorship_levels',
+			$wpdb->prefix . 'ems_sponsor_eoi',
 		);
 
 		foreach ( $tables as $table ) {

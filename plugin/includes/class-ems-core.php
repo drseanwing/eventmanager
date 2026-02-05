@@ -136,6 +136,9 @@ class EMS_Core {
 		// Load collaboration
 		require_once EMS_PLUGIN_DIR . 'includes/collaboration/class-ems-sponsor-portal.php';
 
+		// Load sponsor subsystem
+		require_once EMS_PLUGIN_DIR . 'includes/sponsor/class-ems-sponsor-meta.php';
+
 		// Load admin
 		require_once EMS_PLUGIN_DIR . 'admin/class-ems-admin.php';
 
@@ -217,6 +220,78 @@ class EMS_Core {
 			$wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN cancellation_reason TEXT NULL" );
 		}
 
+		// v1.5.0: Create sponsorship levels and EOI tables
+		$sponsorship_levels_table = $wpdb->prefix . 'ems_sponsorship_levels';
+		$eoi_table = $wpdb->prefix . 'ems_sponsor_eoi';
+
+		$levels_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$sponsorship_levels_table}'" );
+		if ( ! $levels_exists ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql = "CREATE TABLE {$sponsorship_levels_table} (
+				id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+				event_id BIGINT UNSIGNED NOT NULL,
+				level_name VARCHAR(100) NOT NULL,
+				level_slug VARCHAR(100) NOT NULL,
+				colour VARCHAR(7) NOT NULL DEFAULT '#CD7F32',
+				value_aud DECIMAL(10,2) DEFAULT NULL,
+				slots_total INT DEFAULT NULL,
+				slots_filled INT NOT NULL DEFAULT 0,
+				recognition_text TEXT DEFAULT NULL,
+				sort_order INT NOT NULL DEFAULT 0,
+				enabled TINYINT(1) NOT NULL DEFAULT 1,
+				created_at DATETIME NOT NULL,
+				updated_at DATETIME NOT NULL,
+				KEY event_id (event_id),
+				KEY event_level (event_id, level_slug)
+			) $charset_collate;";
+			dbDelta( $sql );
+		}
+
+		$eoi_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$eoi_table}'" );
+		if ( ! $eoi_exists ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql = "CREATE TABLE {$eoi_table} (
+				id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+				sponsor_id BIGINT UNSIGNED NOT NULL,
+				event_id BIGINT UNSIGNED NOT NULL,
+				status VARCHAR(20) NOT NULL DEFAULT 'pending',
+				preferred_level VARCHAR(100) DEFAULT NULL,
+				estimated_value DECIMAL(10,2) DEFAULT NULL,
+				contribution_nature TEXT DEFAULT NULL,
+				conditional_outcome TEXT DEFAULT NULL,
+				speaker_nomination TEXT DEFAULT NULL,
+				duration_interest VARCHAR(50) DEFAULT NULL,
+				exclusivity_requested TINYINT(1) NOT NULL DEFAULT 0,
+				exclusivity_category VARCHAR(255) DEFAULT NULL,
+				shared_presence_accepted TINYINT(1) NOT NULL DEFAULT 0,
+				competitor_objections TEXT DEFAULT NULL,
+				exclusivity_conditions TEXT DEFAULT NULL,
+				recognition_elements TEXT DEFAULT NULL,
+				trade_display_requested TINYINT(1) NOT NULL DEFAULT 0,
+				trade_display_requirements TEXT DEFAULT NULL,
+				representatives_count INT DEFAULT NULL,
+				product_samples TINYINT(1) NOT NULL DEFAULT 0,
+				promotional_material TINYINT(1) NOT NULL DEFAULT 0,
+				delegate_data_collection TINYINT(1) NOT NULL DEFAULT 0,
+				social_media_expectations TEXT DEFAULT NULL,
+				content_independence_acknowledged TINYINT(1) NOT NULL DEFAULT 0,
+				content_influence TEXT DEFAULT NULL,
+				therapeutic_claims TINYINT(1) NOT NULL DEFAULT 0,
+				material_review_required TINYINT(1) NOT NULL DEFAULT 0,
+				submitted_at DATETIME NOT NULL,
+				reviewed_at DATETIME DEFAULT NULL,
+				reviewed_by BIGINT UNSIGNED DEFAULT NULL,
+				review_notes TEXT DEFAULT NULL,
+				KEY sponsor_id (sponsor_id),
+				KEY event_id (event_id),
+				KEY status (status),
+				UNIQUE KEY sponsor_event (sponsor_id, event_id)
+			) $charset_collate;";
+			dbDelta( $sql );
+		}
+
 		$this->logger->info( 'Database upgraded to version ' . EMS_VERSION, EMS_Logger::CONTEXT_GENERAL );
 	}
 
@@ -250,6 +325,7 @@ class EMS_Core {
 		$cpt_abstract = new EMS_CPT_Abstract();
 		$cpt_session  = new EMS_CPT_Session();
 		$cpt_sponsor  = new EMS_CPT_Sponsor();
+		$sponsor_meta = new EMS_Sponsor_Meta();
 
 		$this->loader->add_action( 'init', $cpt_event, 'register_post_type' );
 		$this->loader->add_action( 'init', $cpt_event, 'register_taxonomies' );

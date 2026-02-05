@@ -117,7 +117,41 @@ class EMS_CPT_Event {
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_meta_boxes' ), 10, 2 );
 
+		// Register sponsorship meta fields
+		$this->register_sponsorship_meta();
+
 		$this->logger->debug( 'Event post type registered', EMS_Logger::CONTEXT_GENERAL );
+	}
+
+	/**
+	 * Register sponsorship meta fields
+	 *
+	 * @since 1.0.0
+	 */
+	public function register_sponsorship_meta() {
+		register_post_meta( self::POST_TYPE, '_ems_sponsorship_enabled', array(
+			'type'              => 'boolean',
+			'description'       => __( 'Whether sponsorship is enabled for this event', 'event-management-system' ),
+			'single'            => true,
+			'default'           => false,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'auth_callback'     => function( $allowed, $meta_key, $post_id ) {
+				return current_user_can( 'edit_post', $post_id );
+			},
+		) );
+
+		register_post_meta( self::POST_TYPE, '_ems_sponsorship_levels_enabled', array(
+			'type'              => 'boolean',
+			'description'       => __( 'Whether sponsorship levels are enabled for this event', 'event-management-system' ),
+			'single'            => true,
+			'default'           => false,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'auth_callback'     => function( $allowed, $meta_key, $post_id ) {
+				return current_user_can( 'edit_post', $post_id );
+			},
+		) );
 	}
 
 	/**
@@ -457,6 +491,13 @@ class EMS_CPT_Event {
 		// Save schedule published status
 		$schedule_published = isset( $_POST['schedule_published'] ) ? 1 : 0;
 		update_post_meta( $post_id, 'schedule_published', $schedule_published );
+
+		// Save sponsorship settings
+		$sponsorship_enabled = isset( $_POST['_ems_sponsorship_enabled'] ) ? true : false;
+		update_post_meta( $post_id, '_ems_sponsorship_enabled', $sponsorship_enabled );
+
+		$sponsorship_levels_enabled = isset( $_POST['_ems_sponsorship_levels_enabled'] ) ? true : false;
+		update_post_meta( $post_id, '_ems_sponsorship_levels_enabled', $sponsorship_levels_enabled );
 
 		// Log the save
 		$this->logger->info(
