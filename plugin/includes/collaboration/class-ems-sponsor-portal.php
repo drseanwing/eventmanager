@@ -610,7 +610,7 @@ class EMS_Sponsor_Portal {
 			}
 
 			// Check permissions
-			if ( ! current_user_can( 'manage_options' ) && $file->user_id !== get_current_user_id() ) {
+			if ( ! current_user_can( 'manage_options' ) && absint( $file->user_id ) !== get_current_user_id() ) {
 				return array(
 					'success' => false,
 					'message' => __( 'You do not have permission to delete this file', 'event-management-system' ),

@@ -961,7 +961,9 @@ class EMS_Sponsor_Shortcodes {
 			}
 
 			// SECURITY: Verify that the current user owns/is linked to this sponsor
-			$user_sponsor_id = get_user_meta( get_current_user_id(), '_ems_sponsor_id', true );
+			require_once EMS_PLUGIN_DIR . 'includes/collaboration/class-ems-sponsor-portal.php';
+			$portal = new EMS_Sponsor_Portal();
+			$user_sponsor_id = $portal->get_user_sponsor_id( get_current_user_id() );
 			if ( absint( $user_sponsor_id ) !== $sponsor_id && ! current_user_can( 'manage_options' ) ) {
 				wp_send_json_error( __( 'Permission denied.', 'event-management-system' ) );
 			}
