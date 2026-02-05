@@ -127,16 +127,26 @@ class EMS_Sponsorship_Levels {
 		$level_slug = sanitize_title( $level_name );
 
 		// Ensure unique slug within event
+		$base_slug = $level_slug;
+		$counter = 1;
 		$existing = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$this->table()} WHERE event_id = %d AND level_slug = %s",
+				"SELECT id FROM {$this->table()} WHERE event_id = %d AND level_slug = %s",
 				$event_id,
 				$level_slug
 			)
 		);
 
-		if ( $existing > 0 ) {
-			$level_slug .= '-' . wp_rand( 100, 999 );
+		while ( $existing ) {
+			$level_slug = $base_slug . '-' . $counter;
+			$existing = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$this->table()} WHERE event_id = %d AND level_slug = %s",
+					$event_id,
+					$level_slug
+				)
+			);
+			$counter++;
 		}
 
 		$now = current_time( 'mysql' );
@@ -182,6 +192,23 @@ class EMS_Sponsorship_Levels {
 		}
 
 		$level_id = $wpdb->insert_id;
+
+		// Fix NULL values that were cast to 0 by %f and %d format specifiers
+		$null_updates = array();
+		if ( is_null( $insert_data['value_aud'] ) || '' === $insert_data['value_aud'] ) {
+			$null_updates[] = 'value_aud = NULL';
+		}
+		if ( is_null( $insert_data['slots_total'] ) || '' === $insert_data['slots_total'] ) {
+			$null_updates[] = 'slots_total = NULL';
+		}
+		if ( ! empty( $null_updates ) ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$this->table()} SET " . implode( ', ', $null_updates ) . " WHERE id = %d",
+					$level_id
+				)
+			);
+		}
 
 		$this->logger->info(
 			sprintf( 'Sponsorship level "%s" (ID: %d) added to event %d', $level_name, $level_id, $event_id ),
@@ -420,29 +447,24 @@ class EMS_Sponsorship_Levels {
 			return false;
 		}
 
-		$level = $this->get_level( $level_id );
-		if ( ! $level ) {
-			return false;
-		}
-
-		// Check slot availability before incrementing
-		if ( ! is_null( $level->slots_total ) && intval( $level->slots_filled ) >= intval( $level->slots_total ) ) {
-			$this->logger->warning(
-				sprintf( 'Cannot increment slots_filled for level %d: all slots are full', $level_id ),
-				EMS_Logger::CONTEXT_GENERAL
-			);
-			return false;
-		}
-
+		// Atomic increment with slot limit check in single query
 		$result = $wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$this->table()} SET slots_filled = slots_filled + 1, updated_at = %s WHERE id = %d",
+				"UPDATE {$this->table()} SET slots_filled = slots_filled + 1, updated_at = %s WHERE id = %d AND (slots_total IS NULL OR slots_filled < slots_total)",
 				current_time( 'mysql' ),
 				$level_id
 			)
 		);
 
-		return false !== $result;
+		if ( false === $result || 0 === $wpdb->rows_affected ) {
+			$this->logger->warning(
+				sprintf( 'Cannot increment slots_filled for level %d: all slots filled or level not found', $level_id ),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

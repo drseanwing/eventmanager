@@ -315,7 +315,7 @@ class EMS_Roles {
 			'delete_others_ems_events',
 			'edit_private_ems_events',
 			'edit_published_ems_events',
-			
+
 			// Session capabilities
 			'edit_ems_session',
 			'read_ems_session',
@@ -330,7 +330,7 @@ class EMS_Roles {
 			'delete_others_ems_sessions',
 			'edit_private_ems_sessions',
 			'edit_published_ems_sessions',
-			
+
 			// Abstract capabilities
 			'edit_ems_abstract',
 			'read_ems_abstract',
@@ -345,7 +345,22 @@ class EMS_Roles {
 			'delete_others_ems_abstracts',
 			'edit_private_ems_abstracts',
 			'edit_published_ems_abstracts',
-			
+
+			// Sponsor capabilities
+			'edit_ems_sponsor',
+			'read_ems_sponsor',
+			'delete_ems_sponsor',
+			'edit_ems_sponsors',
+			'edit_others_ems_sponsors',
+			'publish_ems_sponsors',
+			'read_private_ems_sponsors',
+			'delete_ems_sponsors',
+			'delete_private_ems_sponsors',
+			'delete_published_ems_sponsors',
+			'delete_others_ems_sponsors',
+			'edit_private_ems_sponsors',
+			'edit_published_ems_sponsors',
+
 			// Custom EMS capabilities
 			'view_ems_registrations',
 			'export_ems_registrations',

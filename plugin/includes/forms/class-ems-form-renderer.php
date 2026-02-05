@@ -94,13 +94,15 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_text( $field, $value ) {
+		$aria_describedby = self::get_aria_describedby( $field );
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="text" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s />',
+			'<input type="text" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			esc_attr( $value ),
 			esc_attr( $field['placeholder'] ),
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= self::render_help_text( $field );
@@ -118,13 +120,15 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_textarea( $field, $value ) {
+		$aria_describedby = self::get_aria_describedby( $field );
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<textarea name="%s" id="ems-field-%s" class="ems-form-control" rows="%d" placeholder="%s"%s>%s</textarea>',
+			'<textarea name="%s" id="ems-field-%s" class="ems-form-control" rows="%d" placeholder="%s"%s%s>%s</textarea>',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			absint( $field['rows'] ),
 			esc_attr( $field['placeholder'] ),
+			$aria_describedby,
 			$field['required'] ? ' required' : '',
 			esc_textarea( $value )
 		);
@@ -143,13 +147,15 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_email( $field, $value ) {
+		$aria_describedby = self::get_aria_describedby( $field );
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="email" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s />',
+			'<input type="email" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			esc_attr( $value ),
 			esc_attr( $field['placeholder'] ),
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= self::render_help_text( $field );
@@ -167,13 +173,15 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_phone( $field, $value ) {
+		$aria_describedby = self::get_aria_describedby( $field );
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="tel" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s />',
+			'<input type="tel" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			esc_attr( $value ),
 			esc_attr( $field['placeholder'] ),
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= self::render_help_text( $field );
@@ -191,13 +199,15 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_url( $field, $value ) {
+		$aria_describedby = self::get_aria_describedby( $field );
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="url" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s />',
+			'<input type="url" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			esc_attr( $value ),
 			esc_attr( $field['placeholder'] ? $field['placeholder'] : 'https://' ),
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= self::render_help_text( $field );
@@ -215,11 +225,13 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_select( $field, $value ) {
+		$aria_describedby = self::get_aria_describedby( $field );
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<select name="%s" id="ems-field-%s" class="ems-form-control"%s>',
+			'<select name="%s" id="ems-field-%s" class="ems-form-control"%s%s>',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= '<option value="">' . esc_html__( 'Select...', 'event-management-system' ) . '</option>';
@@ -250,8 +262,10 @@ class EMS_Form_Renderer {
 	 */
 	private static function render_multiselect( $field, $value ) {
 		$selected = is_array( $value ) ? $value : ( $value ? explode( ',', $value ) : array() );
+		$required_indicator = $field['required'] ? ' <span class="ems-required">*</span>' : '';
 
-		$html  = self::render_label( $field );
+		$html  = '<fieldset>';
+		$html .= '<legend>' . esc_html( $field['label'] ) . $required_indicator . '</legend>';
 		$html .= '<div class="ems-multiselect-group">';
 
 		foreach ( $field['options'] as $opt_value => $opt_label ) {
@@ -266,6 +280,7 @@ class EMS_Form_Renderer {
 		}
 
 		$html .= '</div>';
+		$html .= '</fieldset>';
 		$html .= self::render_help_text( $field );
 		$html .= self::render_error_container( $field );
 
@@ -282,13 +297,15 @@ class EMS_Form_Renderer {
 	 */
 	private static function render_checkbox( $field, $value ) {
 		$checked = ( '1' === (string) $value || 'yes' === $value || true === $value ) ? ' checked' : '';
+		$aria_describedby = self::get_aria_describedby( $field );
 
 		$html  = '<label class="ems-checkbox-label">';
 		$html .= sprintf(
-			'<input type="checkbox" name="%s" id="ems-field-%s" value="1"%s%s /> ',
+			'<input type="checkbox" name="%s" id="ems-field-%s" value="1"%s%s%s /> ',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			$checked,
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= esc_html( $field['label'] );
@@ -311,7 +328,10 @@ class EMS_Form_Renderer {
 	 * @return string HTML output.
 	 */
 	private static function render_radio( $field, $value ) {
-		$html  = self::render_label( $field );
+		$required_indicator = $field['required'] ? ' <span class="ems-required">*</span>' : '';
+
+		$html  = '<fieldset>';
+		$html .= '<legend>' . esc_html( $field['label'] ) . $required_indicator . '</legend>';
 		$html .= '<div class="ems-radio-group">';
 
 		foreach ( $field['options'] as $opt_value => $opt_label ) {
@@ -327,6 +347,7 @@ class EMS_Form_Renderer {
 		}
 
 		$html .= '</div>';
+		$html .= '</fieldset>';
 		$html .= self::render_help_text( $field );
 		$html .= self::render_error_container( $field );
 
@@ -343,13 +364,15 @@ class EMS_Form_Renderer {
 	 */
 	private static function render_file( $field, $value ) {
 		$accept = ! empty( $field['accept'] ) ? ' accept="' . esc_attr( $field['accept'] ) . '"' : '';
+		$aria_describedby = self::get_aria_describedby( $field );
 
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="file" name="%s" id="ems-field-%s" class="ems-form-control"%s%s />',
+			'<input type="file" name="%s" id="ems-field-%s" class="ems-form-control"%s%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			$accept,
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 
@@ -376,15 +399,17 @@ class EMS_Form_Renderer {
 	private static function render_date( $field, $value ) {
 		$min_attr = ! empty( $field['min'] ) ? ' min="' . esc_attr( $field['min'] ) . '"' : '';
 		$max_attr = ! empty( $field['max'] ) ? ' max="' . esc_attr( $field['max'] ) . '"' : '';
+		$aria_describedby = self::get_aria_describedby( $field );
 
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="date" name="%s" id="ems-field-%s" value="%s" class="ems-form-control"%s%s%s />',
+			'<input type="date" name="%s" id="ems-field-%s" value="%s" class="ems-form-control"%s%s%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			esc_attr( $value ),
 			$min_attr,
 			$max_attr,
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= self::render_help_text( $field );
@@ -404,16 +429,18 @@ class EMS_Form_Renderer {
 	private static function render_number( $field, $value ) {
 		$min_attr = ( '' !== $field['min'] ) ? ' min="' . esc_attr( $field['min'] ) . '"' : '';
 		$max_attr = ( '' !== $field['max'] ) ? ' max="' . esc_attr( $field['max'] ) . '"' : '';
+		$aria_describedby = self::get_aria_describedby( $field );
 
 		$html  = self::render_label( $field );
 		$html .= sprintf(
-			'<input type="number" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s%s%s />',
+			'<input type="number" name="%s" id="ems-field-%s" value="%s" class="ems-form-control" placeholder="%s"%s%s%s%s />',
 			esc_attr( $field['name'] ),
 			esc_attr( $field['name'] ),
 			esc_attr( $value ),
 			esc_attr( $field['placeholder'] ),
 			$min_attr,
 			$max_attr,
+			$aria_describedby,
 			$field['required'] ? ' required' : ''
 		);
 		$html .= self::render_help_text( $field );
@@ -514,7 +541,8 @@ class EMS_Form_Renderer {
 		}
 
 		return sprintf(
-			'<span class="ems-form-help">%s</span>',
+			'<span id="ems-help-%s" class="ems-form-help">%s</span>',
+			esc_attr( $field['name'] ),
 			esc_html( $field['help_text'] )
 		);
 	}
@@ -557,5 +585,32 @@ class EMS_Form_Renderer {
 		}
 
 		return $attrs;
+	}
+
+	/**
+	 * Get aria-describedby attribute for a field.
+	 *
+	 * Links the input to its error container and help text for screen readers.
+	 *
+	 * @since 1.5.0
+	 * @param array $field Field definition.
+	 * @return string aria-describedby attribute or empty string.
+	 */
+	private static function get_aria_describedby( $field ) {
+		$ids = array();
+
+		// Always link to error container
+		$ids[] = 'ems-error-' . esc_attr( $field['name'] );
+
+		// Link to help text if present
+		if ( ! empty( $field['help_text'] ) ) {
+			$ids[] = 'ems-help-' . esc_attr( $field['name'] );
+		}
+
+		if ( empty( $ids ) ) {
+			return '';
+		}
+
+		return ' aria-describedby="' . implode( ' ', $ids ) . '"';
 	}
 }

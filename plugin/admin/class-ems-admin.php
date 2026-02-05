@@ -544,7 +544,7 @@ class EMS_Admin {
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Event Registrations', 'event-management-system' ); ?></h1>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ems-add-registration' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New', 'event-management-system' ); ?></a>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=ems-registrations&action=export' . ( $event_id ? '&event_id=' . $event_id : '' ) ) ); ?>" class="page-title-action"><?php esc_html_e( 'Export CSV', 'event-management-system' ); ?></a>
+			<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ems-registrations&action=export' . ( $event_id ? '&event_id=' . $event_id : '' ) ), 'ems_export_registrations' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Export CSV', 'event-management-system' ); ?></a>
 			<hr class="wp-header-end">
 			
 			<!-- Filters -->
@@ -674,28 +674,29 @@ class EMS_Admin {
 	 */
 	private function handle_registration_actions() {
 		global $wpdb;
-		
+
 		$action = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : '';
-		
+
 		if ( 'cancel' === $action && isset( $_GET['id'] ) ) {
 			$id = absint( $_GET['id'] );
 			check_admin_referer( 'cancel_registration_' . $id );
-			
+
 			// Get reason from URL if provided
 			$reason = isset( $_GET['reason'] ) ? sanitize_textarea_field( $_GET['reason'] ) : '';
-			
+
 			// Use the Registration class to properly handle cancellation
 			$registration_handler = new EMS_Registration();
 			$result = $registration_handler->cancel_registration( $id, 'admin', $reason );
-			
+
 			if ( $result['success'] ) {
 				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Registration cancelled successfully. A notification email has been sent to the registrant.', 'event-management-system' ) . '</p></div>';
 			} else {
 				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $result['message'] ) . '</p></div>';
 			}
 		}
-		
+
 		if ( 'export' === $action ) {
+			check_admin_referer( 'ems_export_registrations' );
 			$this->export_registrations_csv();
 		}
 	}
@@ -1296,10 +1297,25 @@ class EMS_Admin {
 
 		try {
 			$event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
-			$sessions = isset( $_POST['sessions'] ) ? $_POST['sessions'] : array();
+			$raw_sessions = isset( $_POST['sessions'] ) ? $_POST['sessions'] : array();
 
 			if ( ! $event_id ) {
 				wp_send_json_error( array( 'message' => __( 'Invalid event ID', 'event-management-system' ) ) );
+			}
+
+			// Sanitize sessions array
+			$sessions = array();
+			if ( is_array( $raw_sessions ) ) {
+				foreach ( $raw_sessions as $session ) {
+					$sessions[] = array(
+						'id'         => isset( $session['id'] ) ? absint( $session['id'] ) : 0,
+						'title'      => isset( $session['title'] ) ? sanitize_text_field( $session['title'] ) : '',
+						'start_time' => isset( $session['start_time'] ) ? sanitize_text_field( $session['start_time'] ) : '',
+						'end_time'   => isset( $session['end_time'] ) ? sanitize_text_field( $session['end_time'] ) : '',
+						'location'   => isset( $session['location'] ) ? sanitize_text_field( $session['location'] ) : '',
+						'order'      => isset( $session['order'] ) ? absint( $session['order'] ) : 0,
+					);
+				}
 			}
 
 			$schedule_builder = new EMS_Schedule_Builder();
@@ -2183,9 +2199,23 @@ class EMS_Admin {
 
 		global $wpdb;
 		$table = $wpdb->prefix . 'ems_sponsor_eoi';
+		$levels_table = $wpdb->prefix . 'ems_sponsorship_levels';
 
 		foreach ( $eoi_ids as $eoi_id ) {
+			// Get the current EOI record
+			$eoi = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $eoi_id ) );
+			if ( ! $eoi ) {
+				continue;
+			}
+
+			$current_status = $eoi->status;
+
 			if ( 'approve' === $action ) {
+				// Skip already approved
+				if ( 'approved' === $current_status ) {
+					continue;
+				}
+
 				$wpdb->update(
 					$table,
 					array(
@@ -2197,7 +2227,61 @@ class EMS_Admin {
 					array( '%s', '%s', '%d' ),
 					array( '%d' )
 				);
+
+				// Increment slots if a level is assigned
+				if ( ! empty( $eoi->level_id ) ) {
+					$wpdb->query( $wpdb->prepare(
+						"UPDATE {$levels_table} SET slots_filled = slots_filled + 1 WHERE id = %d AND (slots_total IS NULL OR slots_filled < slots_total)",
+						absint( $eoi->level_id )
+					) );
+				}
+
+				// Link sponsor to event
+				$linked_sponsors = get_post_meta( $eoi->event_id, '_ems_linked_sponsors', true );
+				if ( ! is_array( $linked_sponsors ) ) {
+					$linked_sponsors = array();
+				}
+				$sponsor_id = absint( $eoi->sponsor_id );
+				if ( ! in_array( $sponsor_id, $linked_sponsors, true ) ) {
+					$linked_sponsors[] = $sponsor_id;
+					update_post_meta( $eoi->event_id, '_ems_linked_sponsors', $linked_sponsors );
+				}
+				// Add reverse reference
+				$linked_events = get_post_meta( $sponsor_id, '_ems_linked_events', true );
+				if ( ! is_array( $linked_events ) ) {
+					$linked_events = array();
+				}
+				if ( ! in_array( absint( $eoi->event_id ), $linked_events, true ) ) {
+					$linked_events[] = absint( $eoi->event_id );
+					update_post_meta( $sponsor_id, '_ems_linked_events', $linked_events );
+				}
+
 			} elseif ( 'reject' === $action ) {
+				// If previously approved, need to decrement slots and unlink
+				if ( 'approved' === $current_status ) {
+					// Decrement slots if a level was assigned
+					if ( ! empty( $eoi->level_id ) ) {
+						$wpdb->query( $wpdb->prepare(
+							"UPDATE {$levels_table} SET slots_filled = GREATEST(slots_filled - 1, 0) WHERE id = %d",
+							absint( $eoi->level_id )
+						) );
+					}
+
+					// Unlink sponsor from event
+					$linked_sponsors = get_post_meta( $eoi->event_id, '_ems_linked_sponsors', true );
+					if ( is_array( $linked_sponsors ) ) {
+						$sponsor_id = absint( $eoi->sponsor_id );
+						$linked_sponsors = array_diff( $linked_sponsors, array( $sponsor_id ) );
+						update_post_meta( $eoi->event_id, '_ems_linked_sponsors', $linked_sponsors );
+					}
+					// Remove reverse reference
+					$linked_events = get_post_meta( $eoi->sponsor_id, '_ems_linked_events', true );
+					if ( is_array( $linked_events ) ) {
+						$linked_events = array_diff( $linked_events, array( absint( $eoi->event_id ) ) );
+						update_post_meta( $eoi->sponsor_id, '_ems_linked_events', $linked_events );
+					}
+				}
+
 				$wpdb->update(
 					$table,
 					array(
@@ -2250,7 +2334,7 @@ class EMS_Admin {
 		}
 
 		// Update EOI status
-		$wpdb->update(
+		$result = $wpdb->update(
 			$eoi_table,
 			array(
 				'status'      => 'approved',
@@ -2262,12 +2346,36 @@ class EMS_Admin {
 			array( '%d' )
 		);
 
+		if ( false === $result ) {
+			wp_send_json_error( array( 'message' => __( 'Database update failed.', 'event-management-system' ) ) );
+		}
+
 		// Decrement available slots if a level is assigned
 		if ( $level_id ) {
 			$wpdb->query( $wpdb->prepare(
 				"UPDATE {$levels_table} SET slots_filled = slots_filled + 1 WHERE id = %d AND (slots_total IS NULL OR slots_filled < slots_total)",
 				$level_id
 			) );
+		}
+
+		// Link sponsor to event
+		$linked_sponsors = get_post_meta( $eoi->event_id, '_ems_linked_sponsors', true );
+		if ( ! is_array( $linked_sponsors ) ) {
+			$linked_sponsors = array();
+		}
+		$sponsor_id = absint( $eoi->sponsor_id );
+		if ( ! in_array( $sponsor_id, $linked_sponsors, true ) ) {
+			$linked_sponsors[] = $sponsor_id;
+			update_post_meta( $eoi->event_id, '_ems_linked_sponsors', $linked_sponsors );
+		}
+		// Add reverse reference
+		$linked_events = get_post_meta( $sponsor_id, '_ems_linked_events', true );
+		if ( ! is_array( $linked_events ) ) {
+			$linked_events = array();
+		}
+		if ( ! in_array( absint( $eoi->event_id ), $linked_events, true ) ) {
+			$linked_events[] = absint( $eoi->event_id );
+			update_post_meta( $sponsor_id, '_ems_linked_events', $linked_events );
 		}
 
 		$this->logger->info(
@@ -2300,7 +2408,7 @@ class EMS_Admin {
 		global $wpdb;
 		$eoi_table = $wpdb->prefix . 'ems_sponsor_eoi';
 
-		$wpdb->update(
+		$result = $wpdb->update(
 			$eoi_table,
 			array(
 				'status'       => 'rejected',
@@ -2312,6 +2420,10 @@ class EMS_Admin {
 			array( '%s', '%s', '%d', '%s' ),
 			array( '%d' )
 		);
+
+		if ( false === $result ) {
+			wp_send_json_error( array( 'message' => __( 'Database update failed.', 'event-management-system' ) ) );
+		}
 
 		$this->logger->info(
 			sprintf( 'EOI #%d rejected by user #%d. Reason: %s', $eoi_id, get_current_user_id(), $reason ),
@@ -2343,7 +2455,7 @@ class EMS_Admin {
 		global $wpdb;
 		$eoi_table = $wpdb->prefix . 'ems_sponsor_eoi';
 
-		$wpdb->update(
+		$result = $wpdb->update(
 			$eoi_table,
 			array(
 				'status'       => 'info_requested',
@@ -2355,6 +2467,10 @@ class EMS_Admin {
 			array( '%s', '%s', '%d', '%s' ),
 			array( '%d' )
 		);
+
+		if ( false === $result ) {
+			wp_send_json_error( array( 'message' => __( 'Database update failed.', 'event-management-system' ) ) );
+		}
 
 		$this->logger->info(
 			sprintf( 'More info requested for EOI #%d by user #%d', $eoi_id, get_current_user_id() ),

@@ -210,7 +210,7 @@ class EMS_Multi_Step_Form {
 				$html .= esc_html( $index + 1 );
 			}
 			$html .= '</span>';
-			$html .= '<span class="ems-form-progress__title">' . esc_html( $step['title'] ) . '</span>';
+			$html .= '<span class="ems-form-progress__title" title="' . esc_attr( $step['title'] ) . '">' . esc_html( $step['title'] ) . '</span>';
 			$html .= $tag_close;
 			$html .= '</li>';
 		}
@@ -399,12 +399,22 @@ class EMS_Multi_Step_Form {
 				break;
 
 			case 'pattern':
-				if ( '' !== $value && ! preg_match( $rule_param, $value ) ) {
-					return sprintf(
-						/* translators: %s: field label */
-						__( '%s format is invalid.', 'event-management-system' ),
-						$label
-					);
+				if ( '' !== $value ) {
+					// Limit input length to prevent ReDoS attacks
+					$check_value = substr( $value, 0, 1000 );
+					// Suppress errors in case of invalid regex pattern
+					$match = @preg_match( $rule_param, $check_value );
+					if ( false === $match ) {
+						// Invalid pattern, skip validation
+						break;
+					}
+					if ( 0 === $match ) {
+						return sprintf(
+							/* translators: %s: field label */
+							__( '%s format is invalid.', 'event-management-system' ),
+							$label
+						);
+					}
 				}
 				break;
 
@@ -680,7 +690,14 @@ class EMS_Multi_Step_Form {
 			} else {
 				$identifier = wp_generate_password( 32, false );
 				if ( ! headers_sent() ) {
-					setcookie( 'ems_form_session', $identifier, time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+					setcookie( 'ems_form_session', $identifier, array(
+						'expires'  => time() + DAY_IN_SECONDS,
+						'path'     => COOKIEPATH,
+						'domain'   => COOKIE_DOMAIN,
+						'secure'   => is_ssl(),
+						'httponly' => true,
+						'samesite' => 'Lax',
+					) );
 				}
 			}
 		}

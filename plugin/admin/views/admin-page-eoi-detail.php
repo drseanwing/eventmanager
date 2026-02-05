@@ -84,7 +84,7 @@ $status_label = isset( $statuses[ $eoi->status ] ) ? $statuses[ $eoi->status ] :
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'EOI updated successfully.', 'event-management-system' ); ?></p></div>
 	<?php endif; ?>
 
-	<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px;">
+	<div class="ems-eoi-detail-layout">
 
 		<!-- Main Content -->
 		<div>
@@ -388,21 +388,6 @@ $status_label = isset( $statuses[ $eoi->status ] ) ? $statuses[ $eoi->status ] :
 	</div>
 </div>
 
-<style>
-.ems-status-badge {
-	display: inline-block;
-	padding: 3px 8px;
-	border-radius: 3px;
-	font-size: 11px;
-	font-weight: 500;
-}
-.ems-status-pending { background: #fff3cd; color: #856404; }
-.ems-status-approved { background: #d4edda; color: #155724; }
-.ems-status-rejected { background: #f8d7da; color: #721c24; }
-.ems-status-withdrawn { background: #e2e3e5; color: #383d41; }
-.ems-status-info_requested { background: #cce5ff; color: #004085; }
-</style>
-
 <script>
 jQuery(document).ready(function($) {
 	var eoiId = <?php echo intval( $eoi_id ); ?>;
@@ -426,7 +411,9 @@ jQuery(document).ready(function($) {
 			level_id: levelId
 		}, function(response) {
 			if (response.success) {
-				window.location.href = window.location.href + '&updated=1';
+				var url = new URL(window.location.href);
+				url.searchParams.set('updated', '1');
+				window.location.href = url.toString();
 			} else {
 				alert(response.data.message || '<?php echo esc_js( __( 'An error occurred.', 'event-management-system' ) ); ?>');
 				$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Approve EOI', 'event-management-system' ) ); ?>');
@@ -454,7 +441,9 @@ jQuery(document).ready(function($) {
 			reason: reason
 		}, function(response) {
 			if (response.success) {
-				window.location.href = window.location.href + '&updated=1';
+				var url = new URL(window.location.href);
+				url.searchParams.set('updated', '1');
+				window.location.href = url.toString();
 			} else {
 				alert(response.data.message || '<?php echo esc_js( __( 'An error occurred.', 'event-management-system' ) ); ?>');
 				$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Reject EOI', 'event-management-system' ) ); ?>');
@@ -483,7 +472,9 @@ jQuery(document).ready(function($) {
 			message: message
 		}, function(response) {
 			if (response.success) {
-				window.location.href = window.location.href + '&updated=1';
+				var url = new URL(window.location.href);
+				url.searchParams.set('updated', '1');
+				window.location.href = url.toString();
 			} else {
 				alert(response.data.message || '<?php echo esc_js( __( 'An error occurred.', 'event-management-system' ) ); ?>');
 				$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Request Information', 'event-management-system' ) ); ?>');

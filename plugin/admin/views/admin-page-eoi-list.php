@@ -97,7 +97,8 @@ $statuses = array(
 			<input type="hidden" name="page" value="ems-eoi-submissions">
 
 			<div class="alignleft actions">
-				<select name="event_id">
+				<label for="ems-filter-event" class="screen-reader-text"><?php esc_html_e( 'Filter by event', 'event-management-system' ); ?></label>
+				<select name="event_id" id="ems-filter-event">
 					<option value=""><?php esc_html_e( 'All Events', 'event-management-system' ); ?></option>
 					<?php foreach ( $events as $event ) : ?>
 						<option value="<?php echo esc_attr( $event->ID ); ?>" <?php selected( $filter_event, $event->ID ); ?>>
@@ -106,7 +107,8 @@ $statuses = array(
 					<?php endforeach; ?>
 				</select>
 
-				<select name="status">
+				<label for="ems-filter-status" class="screen-reader-text"><?php esc_html_e( 'Filter by status', 'event-management-system' ); ?></label>
+				<select name="status" id="ems-filter-status">
 					<option value=""><?php esc_html_e( 'All Statuses', 'event-management-system' ); ?></option>
 					<?php foreach ( $statuses as $key => $label ) : ?>
 						<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $filter_status, $key ); ?>>
@@ -126,7 +128,8 @@ $statuses = array(
 
 		<div class="tablenav top" style="margin-top: 0;">
 			<div class="alignleft actions bulkactions">
-				<select name="bulk_action">
+				<label for="bulk-action-selector" class="screen-reader-text"><?php esc_html_e( 'Bulk actions', 'event-management-system' ); ?></label>
+				<select name="bulk_action" id="bulk-action-selector">
 					<option value=""><?php esc_html_e( 'Bulk Actions', 'event-management-system' ); ?></option>
 					<option value="approve"><?php esc_html_e( 'Approve', 'event-management-system' ); ?></option>
 					<option value="reject"><?php esc_html_e( 'Reject', 'event-management-system' ); ?></option>
@@ -178,6 +181,7 @@ $statuses = array(
 				<thead>
 					<tr>
 						<td class="manage-column column-cb check-column">
+							<label for="cb-select-all" class="screen-reader-text"><?php esc_html_e( 'Select all', 'event-management-system' ); ?></label>
 							<input type="checkbox" id="cb-select-all">
 						</td>
 						<th><?php esc_html_e( 'Sponsor', 'event-management-system' ); ?></th>
@@ -193,7 +197,16 @@ $statuses = array(
 					<?php foreach ( $submissions as $eoi ) : ?>
 						<tr>
 							<th scope="row" class="check-column">
-								<input type="checkbox" name="eoi_ids[]" value="<?php echo esc_attr( $eoi->id ); ?>">
+								<label for="cb-select-<?php echo esc_attr( $eoi->id ); ?>" class="screen-reader-text">
+									<?php
+									printf(
+										/* translators: %d: EOI ID */
+										esc_html__( 'Select EOI #%d', 'event-management-system' ),
+										$eoi->id
+									);
+									?>
+								</label>
+								<input type="checkbox" name="eoi_ids[]" id="cb-select-<?php echo esc_attr( $eoi->id ); ?>" value="<?php echo esc_attr( $eoi->id ); ?>">
 							</th>
 							<td>
 								<strong>
@@ -239,18 +252,3 @@ $statuses = array(
 		<?php endif; ?>
 	</form>
 </div>
-
-<style>
-.ems-status-badge {
-	display: inline-block;
-	padding: 3px 8px;
-	border-radius: 3px;
-	font-size: 11px;
-	font-weight: 500;
-}
-.ems-status-pending { background: #fff3cd; color: #856404; }
-.ems-status-approved { background: #d4edda; color: #155724; }
-.ems-status-rejected { background: #f8d7da; color: #721c24; }
-.ems-status-withdrawn { background: #e2e3e5; color: #383d41; }
-.ems-status-info_requested { background: #cce5ff; color: #004085; }
-</style>

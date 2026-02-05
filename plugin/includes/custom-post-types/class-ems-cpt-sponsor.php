@@ -53,7 +53,8 @@ class EMS_CPT_Sponsor {
 			'public'              => true,
 			'show_ui'             => true,
 			'show_in_menu'        => 'ems-dashboard',
-			'capability_type'     => 'post',
+			'capability_type'     => array( 'ems_sponsor', 'ems_sponsors' ),
+			'map_meta_cap'        => true,
 			'show_in_rest'        => true,
 		);
 
@@ -571,11 +572,18 @@ class EMS_CPT_Sponsor {
 
 			case 'linked_events':
 				global $wpdb;
-				$count = $wpdb->get_var( $wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}ems_sponsor_eoi WHERE sponsor_id = %d AND status = 'approved'",
-					$post_id
-				) );
-				echo esc_html( intval( $count ) );
+				$table_name = $wpdb->prefix . 'ems_sponsor_eoi';
+				// Check table exists before querying
+				$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) );
+				if ( $table_exists ) {
+					$count = $wpdb->get_var( $wpdb->prepare(
+						"SELECT COUNT(*) FROM {$table_name} WHERE sponsor_id = %d AND status = 'approved'",
+						$post_id
+					) );
+					echo absint( $count );
+				} else {
+					echo '0';
+				}
 				break;
 
 			case 'status':

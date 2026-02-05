@@ -133,3 +133,30 @@
 	padding-bottom: 8px;
 	border-bottom: 1px solid #eee;
 }
+
+/* Status badges */
+.ems-status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.ems-status-pending { background: #fff3cd; color: #856404; }
+.ems-status-approved { background: #d4edda; color: #155724; }
+.ems-status-rejected { background: #f8d7da; color: #721c24; }
+.ems-status-withdrawn { background: #e2e3e5; color: #383d41; }
+.ems-status-info_requested { background: #cce5ff; color: #004085; }
+
+/* EOI detail layout */
+.ems-eoi-detail-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+@media (max-width: 782px) {
+    .ems-eoi-detail-layout {
+        grid-template-columns: 1fr;
+    }
+}

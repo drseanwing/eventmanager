@@ -252,8 +252,8 @@
 								if ($fileList.length) {
 									$fileList.append(
 										'<div class="ems-file-item">' +
-										'<a href="' + response.data.file_url + '" target="_blank">' + response.data.file_name + '</a>' +
-										'<button type="button" class="ems-remove-file" data-file-id="' + response.data.file_id + '">Remove</button>' +
+										'<a href="' + self.escAttr(response.data.file_url) + '" target="_blank">' + self.escHtml(response.data.file_name) + '</a>' +
+										'<button type="button" class="ems-remove-file" data-file-id="' + self.escAttr(response.data.file_id) + '">Remove</button>' +
 										'</div>'
 									);
 								}
@@ -487,7 +487,7 @@
 				var $button = $(this);
 				var eventId = $button.data('event-id');
 
-				var levelName = $.trim($('#ems-new-level-name').val());
+				var levelName = ($('#ems-new-level-name').val() || '').trim();
 				if (!levelName) {
 					alert('Level name is required.');
 					return;
@@ -651,7 +651,7 @@
 			var row = '<tr class="ems-level-row" data-level-id="' + level.id + '">' +
 				'<td><input type="number" class="ems-level-sort-order small-text" value="' + level.sort_order + '" min="0" style="width: 50px;" /></td>' +
 				'<td><input type="text" class="ems-level-name" value="' + this.escAttr(level.level_name) + '" style="width: 100%;" /></td>' +
-				'<td><input type="color" class="ems-level-colour" value="' + level.colour + '" /></td>' +
+				'<td><input type="color" class="ems-level-colour" value="' + this.escAttr(level.colour) + '" /></td>' +
 				'<td><input type="number" class="ems-level-value small-text" value="' + (level.value_aud || '') + '" min="0" step="0.01" style="width: 90px;" /></td>' +
 				'<td><input type="number" class="ems-level-slots small-text" value="' + (level.slots_total || '') + '" min="0" style="width: 60px;" /></td>' +
 				'<td><span class="ems-level-filled">' + level.slots_filled + '</span></td>' +
@@ -696,7 +696,7 @@
 
 			$('#ems-sponsor-search').on('input', function() {
 				var $input = $(this);
-				var query = $.trim($input.val());
+				var query = ($input.val() || '').trim();
 				var $results = $('#ems-sponsor-search-results');
 
 				// Clear selection
@@ -884,7 +884,7 @@
 
 			var eventId = $('#ems-event-id').val();
 			var row = '<tr data-sponsor-id="' + data.sponsor_id + '" data-level-id="' + (data.level_id || '') + '">' +
-				'<td><a href="' + data.sponsor_url + '">' + this.escHtml(data.sponsor_name) + '</a></td>' +
+				'<td><a href="' + this.escAttr(data.sponsor_url) + '">' + this.escHtml(data.sponsor_name) + '</a></td>' +
 				'<td>' + levelCell + '</td>' +
 				'<td>' + this.escHtml(data.linked_date) + '</td>' +
 				'<td><button type="button" class="button button-small ems-unlink-sponsor-btn" data-sponsor-id="' + data.sponsor_id + '" data-event-id="' + eventId + '">Unlink</button></td>' +
@@ -921,7 +921,8 @@
 			type = type || 'info';
 			var cssClass = type === 'error' ? 'notice-error' : 'notice-success';
 
-			var $notice = $('<div class="notice ' + cssClass + ' inline ems-sponsorship-notice" style="margin: 10px 0;"><p>' + message + '</p></div>');
+			var $notice = $('<div class="notice ' + cssClass + ' inline ems-sponsorship-notice" style="margin: 10px 0;" aria-live="polite" role="status"></div>');
+		$notice.append($('<p>').text(message));
 
 			// Remove any previous notices
 			$('.ems-sponsorship-notice').remove();
@@ -959,7 +960,8 @@
 				.replace(/&/g, '&amp;')
 				.replace(/</g, '&lt;')
 				.replace(/>/g, '&gt;')
-				.replace(/"/g, '&quot;');
+				.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
 		},
 
 		/**
@@ -979,14 +981,14 @@
 			type = type || 'info';
 			var noticeClass = 'notice-' + (type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'));
 			
-			var $notice = $(
-				'<div class="notice ' + noticeClass + ' is-dismissible">' +
-				'<p>' + message + '</p>' +
+			var $notice = $('<div class="notice ' + noticeClass + ' is-dismissible"></div>');
+			var $p = $('<p>').text(message);
+			var $dismissBtn = $(
 				'<button type="button" class="notice-dismiss">' +
 				'<span class="screen-reader-text">Dismiss this notice.</span>' +
-				'</button>' +
-				'</div>'
+				'</button>'
 			);
+			$notice.append($p).append($dismissBtn);
 			
 			// Insert after the page title
 			$('.wrap > h1').first().after($notice);

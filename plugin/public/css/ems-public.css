@@ -230,6 +230,8 @@
 .ems-form textarea:focus {
     background: var(--ems-color-background-alt);
     border-color: var(--ems-color-accent);
+    outline: 2px solid var(--ems-color-accent, #0073aa);
+    outline-offset: 2px;
 }
 
 .ems-form textarea {
@@ -296,9 +298,13 @@
     border: 2px solid transparent;
     border-radius: var(--ems-border-radius);
     cursor: pointer;
-    outline: none;
     transition: all var(--ems-transition-fast);
     -webkit-appearance: none;
+}
+
+.ems-btn:focus-visible {
+    outline: 2px solid var(--ems-color-accent, #0073aa);
+    outline-offset: 2px;
 }
 
 .ems-btn-primary {
@@ -1248,6 +1254,7 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--ems-color-text-light);
+    /* max-width may truncate long titles; PHP adds title attribute for full text on hover */
     max-width: 100px;
     white-space: nowrap;
     overflow: hidden;

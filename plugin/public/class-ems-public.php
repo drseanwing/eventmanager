@@ -1489,8 +1489,26 @@ class EMS_Public {
 	}
 
 	public function rest_get_events( $request ) {
-		$events = get_posts( array( 'post_type' => 'ems_event', 'posts_per_page' => -1 ) );
-		return rest_ensure_response( $events );
+		$per_page = min( absint( $request->get_param( 'per_page' ) ?: 20 ), 100 );
+		$page     = max( absint( $request->get_param( 'page' ) ?: 1 ), 1 );
+
+		$events = get_posts( array(
+			'post_type'      => 'ems_event',
+			'post_status'    => 'publish',
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+		) );
+
+		$safe = array_map( function( $event ) {
+			return array(
+				'id'    => $event->ID,
+				'title' => $event->post_title,
+				'date'  => $event->post_date,
+				'link'  => get_permalink( $event->ID ),
+			);
+		}, $events );
+
+		return rest_ensure_response( $safe );
 	}
 
 	/**

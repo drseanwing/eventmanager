@@ -55,18 +55,21 @@ if ( ! defined( 'WPINC' ) ) {
 								class="ems-level-sort-order small-text"
 								value="<?php echo esc_attr( $level->sort_order ); ?>"
 								min="0"
-								style="width: 50px;" />
+								style="width: 50px;"
+								aria-label="<?php esc_attr_e( 'Sort order', 'event-management-system' ); ?>" />
 						</td>
 						<td>
 							<input type="text"
 								class="ems-level-name"
 								value="<?php echo esc_attr( $level->level_name ); ?>"
-								style="width: 100%;" />
+								style="width: 100%;"
+								aria-label="<?php esc_attr_e( 'Name', 'event-management-system' ); ?>" />
 						</td>
 						<td>
 							<input type="color"
 								class="ems-level-colour"
-								value="<?php echo esc_attr( $level->colour ); ?>" />
+								value="<?php echo esc_attr( $level->colour ); ?>"
+								aria-label="<?php esc_attr_e( 'Colour', 'event-management-system' ); ?>" />
 						</td>
 						<td>
 							<input type="number"
@@ -74,20 +77,22 @@ if ( ! defined( 'WPINC' ) ) {
 								value="<?php echo esc_attr( $level->value_aud ); ?>"
 								min="0"
 								step="0.01"
-								style="width: 90px;" />
+								style="width: 90px;"
+								aria-label="<?php esc_attr_e( 'Value (AUD)', 'event-management-system' ); ?>" />
 						</td>
 						<td>
 							<input type="number"
 								class="ems-level-slots small-text"
 								value="<?php echo esc_attr( $level->slots_total ); ?>"
 								min="0"
-								style="width: 60px;" />
+								style="width: 60px;"
+								aria-label="<?php esc_attr_e( 'Total slots', 'event-management-system' ); ?>" />
 						</td>
 						<td>
 							<span class="ems-level-filled"><?php echo esc_html( $level->slots_filled ); ?></span>
 						</td>
 						<td>
-							<textarea class="ems-level-recognition" rows="2" style="width: 100%;"><?php echo esc_textarea( $level->recognition_text ); ?></textarea>
+							<textarea class="ems-level-recognition" rows="2" style="width: 100%;" aria-label="<?php esc_attr_e( 'Recognition text', 'event-management-system' ); ?>"><?php echo esc_textarea( $level->recognition_text ); ?></textarea>
 						</td>
 						<td>
 							<button type="button"
@@ -113,27 +118,27 @@ if ( ! defined( 'WPINC' ) ) {
 		<h4 style="margin-top: 0;"><?php esc_html_e( 'Add New Level', 'event-management-system' ); ?></h4>
 		<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
 			<div>
-				<label><?php esc_html_e( 'Name', 'event-management-system' ); ?></label><br>
+				<label for="ems-new-level-name"><?php esc_html_e( 'Name', 'event-management-system' ); ?></label><br>
 				<input type="text" id="ems-new-level-name" class="regular-text" style="width: 150px;" />
 			</div>
 			<div>
-				<label><?php esc_html_e( 'Colour', 'event-management-system' ); ?></label><br>
+				<label for="ems-new-level-colour"><?php esc_html_e( 'Colour', 'event-management-system' ); ?></label><br>
 				<input type="color" id="ems-new-level-colour" value="#CD7F32" />
 			</div>
 			<div>
-				<label><?php esc_html_e( 'Value (AUD)', 'event-management-system' ); ?></label><br>
+				<label for="ems-new-level-value"><?php esc_html_e( 'Value (AUD)', 'event-management-system' ); ?></label><br>
 				<input type="number" id="ems-new-level-value" class="small-text" min="0" step="0.01" style="width: 90px;" />
 			</div>
 			<div>
-				<label><?php esc_html_e( 'Total Slots', 'event-management-system' ); ?></label><br>
+				<label for="ems-new-level-slots"><?php esc_html_e( 'Total Slots', 'event-management-system' ); ?></label><br>
 				<input type="number" id="ems-new-level-slots" class="small-text" min="0" style="width: 60px;" />
 			</div>
 			<div>
-				<label><?php esc_html_e( 'Sort Order', 'event-management-system' ); ?></label><br>
+				<label for="ems-new-level-sort"><?php esc_html_e( 'Sort Order', 'event-management-system' ); ?></label><br>
 				<input type="number" id="ems-new-level-sort" class="small-text" value="0" min="0" style="width: 50px;" />
 			</div>
 			<div style="flex-basis: 100%;">
-				<label><?php esc_html_e( 'Recognition Text', 'event-management-system' ); ?></label><br>
+				<label for="ems-new-level-recognition"><?php esc_html_e( 'Recognition Text', 'event-management-system' ); ?></label><br>
 				<textarea id="ems-new-level-recognition" rows="2" style="width: 100%;"></textarea>
 			</div>
 			<div>

@@ -205,15 +205,15 @@ class EMS_Core {
 	private function run_database_upgrades() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'ems_registrations';
-		
+
 		// Check if table exists first
-		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) );
 		if ( ! $table_exists ) {
 			return; // Table doesn't exist, skip upgrades
 		}
 
 		// v1.3.0: Add cancellation fields
-		$columns = $wpdb->get_col( "SHOW COLUMNS FROM {$table_name}" );
+		$columns = $wpdb->get_col( "SHOW COLUMNS FROM `" . esc_sql( $table_name ) . "`" );
 		
 		if ( ! in_array( 'cancelled_at', $columns, true ) ) {
 			$wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN cancelled_at DATETIME NULL" );
@@ -229,7 +229,7 @@ class EMS_Core {
 		$sponsorship_levels_table = $wpdb->prefix . 'ems_sponsorship_levels';
 		$eoi_table = $wpdb->prefix . 'ems_sponsor_eoi';
 
-		$levels_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$sponsorship_levels_table}'" );
+		$levels_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $sponsorship_levels_table ) );
 		if ( ! $levels_exists ) {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 			$charset_collate = $wpdb->get_charset_collate();
@@ -253,7 +253,7 @@ class EMS_Core {
 			dbDelta( $sql );
 		}
 
-		$eoi_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$eoi_table}'" );
+		$eoi_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $eoi_table ) );
 		if ( ! $eoi_exists ) {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 			$charset_collate = $wpdb->get_charset_collate();
