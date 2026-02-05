@@ -1609,6 +1609,11 @@ class EMS_Public {
 			wp_die( esc_html__( 'Invalid file ID', 'event-management-system' ) );
 		}
 
+		// Verify nonce to prevent CSRF.
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ems_download_file_' . $file_id ) ) {
+			wp_die( esc_html__( 'Security check failed. Please refresh and try again.', 'event-management-system' ) );
+		}
+
 		// Load sponsor portal
 		require_once EMS_PLUGIN_DIR . 'includes/collaboration/class-ems-sponsor-portal.php';
 		$sponsor_portal = new EMS_Sponsor_Portal();

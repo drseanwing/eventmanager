@@ -34,7 +34,7 @@ class EMS_Roles {
 	 *
 	 * @var string
 	 */
-	const CAPS_VERSION = '1.3.0';
+	const CAPS_VERSION = '1.3.1';
 
 	/**
 	 * Constructor.
@@ -257,13 +257,15 @@ class EMS_Roles {
 	 */
 	private function create_sponsor_role() {
 		remove_role( 'ems_sponsor' );
-		
+
 		add_role(
 			'ems_sponsor',
 			__( 'Event Sponsor', 'event-management-system' ),
 			array(
 				'read'                       => true,
 				'upload_files'               => true,
+				'edit_ems_sponsor'           => true,
+				'read_ems_sponsor'           => true,
 				'access_ems_sponsor_portal'  => true,
 				'upload_ems_sponsor_files'   => true,
 				'download_ems_sponsor_files' => true,

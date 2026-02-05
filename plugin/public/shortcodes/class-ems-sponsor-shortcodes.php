@@ -510,7 +510,7 @@ class EMS_Sponsor_Shortcodes {
 														<td><?php echo esc_html( EMS_Date_Helper::format( $file->upload_date ) ); ?></td>
 														<td><?php echo esc_html( $file->downloads ); ?></td>
 														<td>
-															<a href="<?php echo esc_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ) ); ?>" class="ems-button ems-button-small" target="_blank">
+															<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ), 'ems_download_file_' . $file->id ) ); ?>" class="ems-button ems-button-small" target="_blank">
 																<?php esc_html_e( 'Download', 'event-management-system' ); ?>
 															</a>
 															<button type="button" class="ems-button ems-button-small ems-button-danger ems-delete-file" data-file-id="<?php echo esc_attr( $file->id ); ?>">
@@ -925,7 +925,7 @@ class EMS_Sponsor_Shortcodes {
 			<ul class="ems-files-list">
 				<?php foreach ( $files as $file ) : ?>
 					<li>
-						<a href="<?php echo esc_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ) ); ?>" target="_blank">
+						<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'ems_download_sponsor_file' => $file->id ), home_url() ), 'ems_download_file_' . $file->id ) ); ?>" target="_blank">
 							<?php echo esc_html( $file->file_name ); ?>
 						</a>
 						<span class="ems-file-size">(<?php echo esc_html( size_format( $file->file_size ) ); ?>)</span>
@@ -958,6 +958,12 @@ class EMS_Sponsor_Shortcodes {
 
 			if ( ! $sponsor_id || ! $event_id ) {
 				wp_send_json_error( __( 'Invalid parameters', 'event-management-system' ) );
+			}
+
+			// SECURITY: Verify that the current user owns/is linked to this sponsor
+			$user_sponsor_id = get_user_meta( get_current_user_id(), '_ems_sponsor_id', true );
+			if ( absint( $user_sponsor_id ) !== $sponsor_id && ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Permission denied.', 'event-management-system' ) );
 			}
 
 			// Check if file was uploaded

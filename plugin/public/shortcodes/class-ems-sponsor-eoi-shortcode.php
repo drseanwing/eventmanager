@@ -1063,7 +1063,14 @@ class EMS_Sponsor_EOI_Shortcode {
 				sprintf( 'EOI rate limit exceeded for user %d', get_current_user_id() ),
 				EMS_Logger::CONTEXT_SECURITY
 			);
-			return;
+			wp_die(
+				esc_html__( 'You have submitted too many expressions of interest recently. Please try again later.', 'event-management-system' ),
+				esc_html__( 'Rate Limit Exceeded', 'event-management-system' ),
+				array(
+					'response'  => 429,
+					'back_link' => true,
+				)
+			);
 		}
 
 		// Load form state to retrieve all step data.
@@ -1328,6 +1335,9 @@ class EMS_Sponsor_EOI_Shortcode {
 	/**
 	 * Record an EOI submission attempt for rate limiting.
 	 *
+	 * Preserves the original TTL when incrementing the counter to prevent
+	 * timer reset on each submission.
+	 *
 	 * @since 1.5.0
 	 * @return void
 	 */
@@ -1341,9 +1351,31 @@ class EMS_Sponsor_EOI_Shortcode {
 
 		$attempts = get_transient( $key );
 		if ( false === $attempts ) {
+			// First submission in window - set counter to 1 with full hour expiry
 			set_transient( $key, 1, HOUR_IN_SECONDS );
 		} else {
-			set_transient( $key, (int) $attempts + 1, HOUR_IN_SECONDS );
+			// Subsequent submission - preserve remaining TTL to prevent timer reset
+			global $wpdb;
+			$timeout_key = '_transient_timeout_' . $key;
+			$timeout = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+					$timeout_key
+				)
+			);
+
+			if ( $timeout ) {
+				$ttl = max( 0, (int) $timeout - time() );
+				if ( $ttl > 0 ) {
+					set_transient( $key, (int) $attempts + 1, $ttl );
+				} else {
+					// Transient expired, start new window
+					set_transient( $key, 1, HOUR_IN_SECONDS );
+				}
+			} else {
+				// Transient expired, start new window
+				set_transient( $key, 1, HOUR_IN_SECONDS );
+			}
 		}
 	}
 }

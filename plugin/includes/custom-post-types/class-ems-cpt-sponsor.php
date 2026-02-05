@@ -523,7 +523,8 @@ class EMS_CPT_Sponsor {
 		}
 
 		// Use EMS_Sponsor_Meta to save all fields
-		EMS_Sponsor_Meta::update_sponsor_meta( $post_id, $_POST );
+		$data = wp_unslash( $_POST );
+		EMS_Sponsor_Meta::update_sponsor_meta( $post_id, $data );
 
 		$this->logger->info(
 			sprintf( 'Sponsor #%d meta saved by user #%d', $post_id, get_current_user_id() ),
@@ -616,16 +617,9 @@ class EMS_CPT_Sponsor {
 				break;
 
 			case 'linked_events':
-				global $wpdb;
-				$table_name = $wpdb->prefix . 'ems_sponsor_eoi';
-				// Check table exists before querying
-				$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) );
-				if ( $table_exists ) {
-					$count = $wpdb->get_var( $wpdb->prepare(
-						"SELECT COUNT(*) FROM {$table_name} WHERE sponsor_id = %d AND status = 'approved'",
-						$post_id
-					) );
-					echo absint( $count );
+				$linked_events = get_post_meta( $post_id, '_ems_linked_events', true );
+				if ( is_array( $linked_events ) && ! empty( $linked_events ) ) {
+					echo absint( count( $linked_events ) );
 				} else {
 					echo '0';
 				}

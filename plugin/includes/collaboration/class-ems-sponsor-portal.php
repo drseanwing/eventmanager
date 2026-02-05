@@ -706,8 +706,9 @@ class EMS_Sponsor_Portal {
 			) );
 
 			// Serve file
+			$safe_filename = sanitize_file_name( basename( $file->file_name ) );
 			header( 'Content-Type: application/octet-stream' );
-			header( 'Content-Disposition: attachment; filename="' . basename( $file->file_name ) . '"' );
+			header( 'Content-Disposition: attachment; filename="' . $safe_filename . '"' );
 			header( 'Content-Length: ' . filesize( $file->file_path ) );
 			header( 'Cache-Control: no-cache' );
 
@@ -764,7 +765,7 @@ class EMS_Sponsor_Portal {
 
 		// Check if user is associated with the sponsor
 		$sponsor_id = $this->get_user_sponsor_id( $user_id );
-		if ( $sponsor_id && $sponsor_id === $file->sponsor_id ) {
+		if ( $sponsor_id && absint( $sponsor_id ) === absint( $file->sponsor_id ) ) {
 			return true;
 		}
 
@@ -913,6 +914,28 @@ class EMS_Sponsor_Portal {
 				'success' => false,
 				'message' => __( 'No valid fields to update.', 'event-management-system' ),
 			);
+		}
+
+		// Validate ABN if provided
+		if ( ! empty( $filtered_data['abn'] ) ) {
+			$abn_result = EMS_Validator::validate_abn( $filtered_data['abn'] );
+			if ( is_wp_error( $abn_result ) ) {
+				return array(
+					'success' => false,
+					'message' => $abn_result->get_error_message(),
+				);
+			}
+		}
+
+		// Validate ACN if provided
+		if ( ! empty( $filtered_data['acn'] ) ) {
+			$acn_result = EMS_Validator::validate_acn( $filtered_data['acn'] );
+			if ( is_wp_error( $acn_result ) ) {
+				return array(
+					'success' => false,
+					'message' => $acn_result->get_error_message(),
+				);
+			}
 		}
 
 		// Use EMS_Sponsor_Meta::update_sponsor_meta for proper sanitization
