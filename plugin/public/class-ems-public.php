@@ -33,6 +33,18 @@ class EMS_Public {
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( 'ems_public_nonce' ),
 		) );
+
+		// Multi-step form engine script
+		wp_enqueue_script( 'ems-forms', EMS_PLUGIN_URL . 'public/js/ems-forms.js', array( 'jquery' ), $this->version, true );
+		wp_localize_script( 'ems-forms', 'ems_forms', array(
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'i18n'     => array(
+				'confirm_required' => __( 'Please confirm before submitting.', 'event-management-system' ),
+				'submit_success'   => __( 'Form submitted successfully!', 'event-management-system' ),
+				'submit_error'     => __( 'An error occurred. Please try again.', 'event-management-system' ),
+				'network_error'    => __( 'A network error occurred. Please try again.', 'event-management-system' ),
+			),
+		) );
 	}
 
 	public function register_shortcodes() {
@@ -1571,5 +1583,326 @@ class EMS_Public {
 		// Trigger download
 		$sponsor_portal->download_sponsor_file( $file_id );
 		exit;
+	}
+
+	// =========================================================================
+	// Multi-Step Form AJAX Handlers (Phase 4 - Form Framework)
+	// =========================================================================
+
+	/**
+	 * AJAX handler: Validate a single form step.
+	 *
+	 * Expects POST data: ems_form_id, current_step, form_data, nonce.
+	 * Returns success or error with field-specific messages.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public function ajax_form_validate_step() {
+		// Verify nonce
+		$form_id = isset( $_POST['ems_form_id'] ) ? sanitize_key( $_POST['ems_form_id'] ) : '';
+		if ( ! $form_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid form.', 'event-management-system' ) ) );
+		}
+
+		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( $_POST['nonce'] ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'ems_form_' . $form_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed. Please refresh and try again.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$current_step = isset( $_POST['current_step'] ) ? absint( $_POST['current_step'] ) : 0;
+
+			/**
+			 * Filters the multi-step form instance used for AJAX validation.
+			 *
+			 * Consuming code (e.g. Onboarding, EOI) must hook here to provide
+			 * a fully-configured EMS_Multi_Step_Form with registered steps.
+			 *
+			 * @since 1.5.0
+			 * @param EMS_Multi_Step_Form|null $form    The form instance (null by default).
+			 * @param string                   $form_id The form identifier.
+			 */
+			$form = apply_filters( 'ems_get_multi_step_form', null, $form_id );
+
+			if ( ! $form instanceof EMS_Multi_Step_Form ) {
+				wp_send_json_error( array( 'message' => __( 'Form configuration not found.', 'event-management-system' ) ) );
+			}
+
+			$steps = $form->get_steps();
+			if ( ! isset( $steps[ $current_step ] ) ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid step.', 'event-management-system' ) ) );
+			}
+
+			$step_slug = $steps[ $current_step ]['slug'];
+
+			// Parse form data from serialised string
+			$raw_data = array();
+			if ( isset( $_POST['form_data'] ) ) {
+				parse_str( $_POST['form_data'], $raw_data );
+			}
+
+			// Merge direct POST fields as well
+			$step_data = $this->sanitize_form_step_data( $raw_data, $steps[ $current_step ] );
+
+			// Validate
+			$result = $form->validate_step( $step_slug, $step_data );
+
+			if ( true === $result ) {
+				wp_send_json_success( array( 'message' => __( 'Step validated.', 'event-management-system' ) ) );
+			}
+
+			// Build field-specific errors
+			$errors = array();
+			if ( is_wp_error( $result ) ) {
+				foreach ( $result->get_error_codes() as $code ) {
+					$errors[ $code ] = $result->get_error_messages( $code );
+				}
+			}
+
+			wp_send_json_error( array(
+				'message' => __( 'Please correct the errors below.', 'event-management-system' ),
+				'errors'  => $errors,
+			) );
+
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_form_validate_step error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred. Please try again.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler: Save form progress (state persistence).
+	 *
+	 * Saves current step data to a transient so users can resume later.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public function ajax_form_save_progress() {
+		$form_id = isset( $_POST['ems_form_id'] ) ? sanitize_key( $_POST['ems_form_id'] ) : '';
+		if ( ! $form_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid form.', 'event-management-system' ) ) );
+		}
+
+		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( $_POST['nonce'] ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'ems_form_' . $form_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$current_step = isset( $_POST['current_step'] ) ? absint( $_POST['current_step'] ) : 0;
+
+			/** @see ems_get_multi_step_form filter */
+			$form = apply_filters( 'ems_get_multi_step_form', null, $form_id );
+
+			if ( ! $form instanceof EMS_Multi_Step_Form ) {
+				wp_send_json_error( array( 'message' => __( 'Form configuration not found.', 'event-management-system' ) ) );
+			}
+
+			// Load existing state first
+			$form->load_state();
+
+			$steps = $form->get_steps();
+
+			// Parse the serialised form data
+			$raw_data = array();
+			if ( isset( $_POST['form_data'] ) ) {
+				parse_str( $_POST['form_data'], $raw_data );
+			}
+
+			// Save data for the current step (the step we are leaving)
+			$leaving_step = isset( $raw_data['ems_current_step'] ) ? absint( $raw_data['ems_current_step'] ) : $current_step;
+			if ( isset( $steps[ $leaving_step ] ) ) {
+				$step_data = $this->sanitize_form_step_data( $raw_data, $steps[ $leaving_step ] );
+				$form->set_form_data( $steps[ $leaving_step ]['slug'], $step_data );
+			}
+
+			$form->set_current_step( $current_step );
+			$form->save_state();
+
+			wp_send_json_success( array(
+				'message'      => __( 'Progress saved.', 'event-management-system' ),
+				'redirect_url' => '',
+			) );
+
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_form_save_progress error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred while saving progress.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler: Submit the complete multi-step form.
+	 *
+	 * Validates all steps, then fires the `ems_form_submitted_{form_id}` action
+	 * so that form-specific handlers can process the data.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public function ajax_form_submit() {
+		$form_id = isset( $_POST['ems_form_id'] ) ? sanitize_key( $_POST['ems_form_id'] ) : '';
+		if ( ! $form_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid form.', 'event-management-system' ) ) );
+		}
+
+		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( $_POST['nonce'] ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'ems_form_' . $form_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed. Please refresh and try again.', 'event-management-system' ) ) );
+		}
+
+		try {
+			/** @see ems_get_multi_step_form filter */
+			$form = apply_filters( 'ems_get_multi_step_form', null, $form_id );
+
+			if ( ! $form instanceof EMS_Multi_Step_Form ) {
+				wp_send_json_error( array( 'message' => __( 'Form configuration not found.', 'event-management-system' ) ) );
+			}
+
+			// Load saved state (has data from all previous steps)
+			$form->load_state();
+
+			// Parse the final POST data for the last step
+			$raw_data = array();
+			if ( isset( $_POST['form_data'] ) ) {
+				parse_str( $_POST['form_data'], $raw_data );
+			}
+
+			$steps = $form->get_steps();
+
+			// Save the last step's data
+			$last_step_index = isset( $raw_data['ems_current_step'] ) ? absint( $raw_data['ems_current_step'] ) : ( count( $steps ) - 1 );
+			if ( isset( $steps[ $last_step_index ] ) ) {
+				$step_data = $this->sanitize_form_step_data( $raw_data, $steps[ $last_step_index ] );
+				$form->set_form_data( $steps[ $last_step_index ]['slug'], $step_data );
+			}
+
+			// Validate all steps
+			$all_errors = array();
+			foreach ( $steps as $index => $step ) {
+				$step_data = $form->get_step_data( $step['slug'] );
+				$result    = $form->validate_step( $step['slug'], $step_data );
+
+				if ( is_wp_error( $result ) ) {
+					foreach ( $result->get_error_codes() as $code ) {
+						$all_errors[ $code ] = $result->get_error_messages( $code );
+					}
+				}
+			}
+
+			if ( ! empty( $all_errors ) ) {
+				wp_send_json_error( array(
+					'message' => __( 'Some fields have errors. Please review and correct.', 'event-management-system' ),
+					'errors'  => $all_errors,
+				) );
+			}
+
+			/**
+			 * Fires when a multi-step form is successfully submitted.
+			 *
+			 * Form-specific handlers should hook into this action using the form_id suffix:
+			 *   add_action( 'ems_form_submitted_my_form_id', 'my_handler', 10, 2 );
+			 *
+			 * The handler receives the form instance and should call wp_send_json_success()
+			 * or wp_send_json_error() to complete the response.
+			 *
+			 * @since 1.5.0
+			 * @param EMS_Multi_Step_Form $form      The form instance with all collected data.
+			 * @param array               $form_data Complete form data keyed by step slug.
+			 */
+			do_action( 'ems_form_submitted_' . $form_id, $form, $form->get_form_data() );
+
+			// If no handler has sent a response yet, send a generic success
+			$form->clear_state();
+
+			wp_send_json_success( array(
+				'message' => __( 'Form submitted successfully.', 'event-management-system' ),
+			) );
+
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_form_submit error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred during submission. Please try again.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * Sanitize form step data based on field definitions.
+	 *
+	 * Extracts only fields defined in the step and applies appropriate sanitization.
+	 *
+	 * @since 1.5.0
+	 * @param array $raw_data Raw POST data (parsed from serialised string).
+	 * @param array $step     Step definition with 'fields' key.
+	 * @return array Sanitized step data.
+	 */
+	private function sanitize_form_step_data( $raw_data, $step ) {
+		$sanitized = array();
+
+		if ( empty( $step['fields'] ) || ! is_array( $step['fields'] ) ) {
+			return $sanitized;
+		}
+
+		foreach ( $step['fields'] as $field ) {
+			$name = $field['name'];
+			$type = isset( $field['type'] ) ? $field['type'] : 'text';
+
+			if ( ! isset( $raw_data[ $name ] ) ) {
+				// Handle checkboxes that are unchecked (not in POST)
+				if ( 'checkbox' === $type ) {
+					$sanitized[ $name ] = '';
+				}
+				continue;
+			}
+
+			$value = $raw_data[ $name ];
+
+			switch ( $type ) {
+				case 'email':
+					$sanitized[ $name ] = sanitize_email( $value );
+					break;
+
+				case 'url':
+					$sanitized[ $name ] = esc_url_raw( $value );
+					break;
+
+				case 'textarea':
+					$sanitized[ $name ] = sanitize_textarea_field( $value );
+					break;
+
+				case 'number':
+					$sanitized[ $name ] = is_numeric( $value ) ? $value : '';
+					break;
+
+				case 'multiselect':
+					if ( is_array( $value ) ) {
+						$sanitized[ $name ] = array_map( 'sanitize_text_field', $value );
+					} else {
+						$sanitized[ $name ] = sanitize_text_field( $value );
+					}
+					break;
+
+				case 'checkbox':
+					$sanitized[ $name ] = ( '1' === $value || 'yes' === $value ) ? '1' : '';
+					break;
+
+				case 'conditional_group':
+					// Conditional groups don't have their own value
+					break;
+
+				default:
+					$sanitized[ $name ] = sanitize_text_field( $value );
+					break;
+			}
+
+			// Also recurse into conditional group child fields
+			if ( 'conditional_group' === $type && ! empty( $field['fields'] ) ) {
+				$child_step = array( 'fields' => $field['fields'] );
+				$child_data = $this->sanitize_form_step_data( $raw_data, $child_step );
+				$sanitized  = array_merge( $sanitized, $child_data );
+			}
+		}
+
+		return $sanitized;
 	}
 }

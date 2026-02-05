@@ -1107,29 +1107,422 @@
     .ems-sponsor-statistics {
         grid-template-columns: 1fr;
     }
-    
+
     .ems-files-table thead {
         display: none;
     }
-    
+
     .ems-files-table tr {
         display: block;
         margin-bottom: var(--ems-spacing-md);
         border: 1px solid var(--ems-color-border);
         border-radius: var(--ems-border-radius);
     }
-    
+
     .ems-files-table td {
         display: block;
         text-align: right;
         padding: var(--ems-spacing-xs) var(--ems-spacing-sm);
         border-bottom: 1px dotted var(--ems-color-border);
     }
-    
+
     .ems-files-table td:before {
         content: attr(data-label);
         float: left;
         font-weight: 600;
         color: var(--ems-color-text-dark);
+    }
+}
+
+/* ==========================================================================
+   Multi-Step Form Framework (Phase 4)
+   ========================================================================== */
+
+/* Form wrapper */
+.ems-multi-step-form {
+    max-width: 800px;
+    margin: 0 auto var(--ems-spacing-xxl);
+}
+
+/* Step content */
+.ems-form-step {
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-form-step__title {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    font-size: 1.3em;
+    margin: 0 0 var(--ems-spacing-lg) 0;
+    padding-bottom: var(--ems-spacing-md);
+    border-bottom: 2px solid var(--ems-color-accent);
+    color: var(--ems-color-text-dark);
+}
+
+/* Hide validation rules div */
+.ems-step-validation-rules {
+    display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Progress Indicator
+   -------------------------------------------------------------------------- */
+
+.ems-form-progress {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-form-progress__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    counter-reset: step;
+}
+
+/* Connector line between steps */
+.ems-form-progress__list::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 30px;
+    right: 30px;
+    height: 2px;
+    background: var(--ems-color-border);
+    z-index: 0;
+}
+
+.ems-form-progress__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    text-align: center;
+}
+
+.ems-form-progress__step span,
+.ems-form-progress__step button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: default;
+    font: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ems-progress-step-btn {
+    cursor: pointer !important;
+}
+
+.ems-progress-step-btn:hover .ems-form-progress__number {
+    background: var(--ems-color-accent);
+    color: var(--ems-color-text-white);
+    border-color: var(--ems-color-accent);
+}
+
+.ems-form-progress__number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-family: var(--ems-font-heading);
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--ems-color-background);
+    border: 2px solid var(--ems-color-border);
+    color: var(--ems-color-text-light);
+    transition: all var(--ems-transition);
+    margin-bottom: var(--ems-spacing-xs);
+}
+
+.ems-form-progress__title {
+    font-family: var(--ems-font-heading);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ems-color-text-light);
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color var(--ems-transition);
+}
+
+.ems-form-progress__check {
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* Active step */
+.ems-form-progress__step--active .ems-form-progress__number {
+    background: var(--ems-color-primary);
+    border-color: var(--ems-color-primary);
+    color: var(--ems-color-text-white);
+}
+
+.ems-form-progress__step--active .ems-form-progress__title {
+    color: var(--ems-color-text-dark);
+    font-weight: 600;
+}
+
+/* Completed step */
+.ems-form-progress__step--complete .ems-form-progress__number {
+    background: var(--ems-color-success);
+    border-color: var(--ems-color-success);
+    color: var(--ems-color-text-white);
+}
+
+.ems-form-progress__step--complete .ems-form-progress__title {
+    color: var(--ems-color-success);
+}
+
+/* Pending step */
+.ems-form-progress__step--pending .ems-form-progress__number {
+    background: var(--ems-color-background);
+    border-color: var(--ems-color-border);
+    color: var(--ems-color-text-light);
+}
+
+/* --------------------------------------------------------------------------
+   Form Fields (renderer output)
+   -------------------------------------------------------------------------- */
+
+.ems-form-field {
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-form-field--hidden {
+    margin-bottom: 0;
+}
+
+.ems-form-field label {
+    display: block;
+    margin-bottom: var(--ems-spacing-xs);
+    font-family: var(--ems-font-heading);
+    font-size: var(--ems-font-size-small);
+    font-weight: 500;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-required {
+    color: var(--ems-color-error);
+    font-weight: 700;
+}
+
+/* Multiselect / Radio / Checkbox groups */
+.ems-multiselect-group,
+.ems-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ems-spacing-sm);
+    margin-top: var(--ems-spacing-xs);
+}
+
+.ems-checkbox-label,
+.ems-radio-label {
+    display: flex;
+    align-items: center;
+    gap: var(--ems-spacing-xs);
+    font-weight: normal;
+    cursor: pointer;
+    font-size: var(--ems-font-size-base);
+}
+
+.ems-checkbox-label input[type="checkbox"],
+.ems-radio-label input[type="radio"] {
+    width: auto;
+    margin: 0;
+}
+
+/* Conditional group */
+.ems-conditional-group {
+    padding: var(--ems-spacing-md);
+    margin: var(--ems-spacing-sm) 0;
+    border-left: 3px solid var(--ems-color-accent);
+    background: var(--ems-color-background-alt);
+    border-radius: 0 var(--ems-border-radius) var(--ems-border-radius) 0;
+}
+
+/* Field error styling */
+.ems-field-error {
+    display: none;
+    color: var(--ems-color-error);
+    font-size: var(--ems-font-size-small);
+    margin-top: var(--ems-spacing-xs);
+}
+
+.ems-field-error:not(:empty) {
+    display: block;
+}
+
+.ems-input-error {
+    border-color: var(--ems-color-error) !important;
+    background: #fff5f5 !important;
+}
+
+/* Current file indicator for file uploads */
+.ems-file-current {
+    font-size: var(--ems-font-size-small);
+    color: var(--ems-color-text-light);
+    margin-top: var(--ems-spacing-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Form Navigation
+   -------------------------------------------------------------------------- */
+
+.ems-form-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--ems-spacing-xl);
+    padding-top: var(--ems-spacing-lg);
+    border-top: 1px solid var(--ems-color-border);
+}
+
+/* --------------------------------------------------------------------------
+   Review Step
+   -------------------------------------------------------------------------- */
+
+.ems-form-review {
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-form-review__title {
+    font-family: var(--ems-font-heading);
+    font-weight: 500;
+    font-size: 1.3em;
+    margin: 0 0 var(--ems-spacing-sm) 0;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-form-review__description {
+    color: var(--ems-color-text-light);
+    margin-bottom: var(--ems-spacing-lg);
+}
+
+.ems-form-review__section {
+    background: var(--ems-color-background);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    padding: var(--ems-spacing-lg);
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-form-review__section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--ems-spacing-md);
+    padding-bottom: var(--ems-spacing-sm);
+    border-bottom: 1px solid var(--ems-color-border);
+}
+
+.ems-form-review__section-header h4 {
+    margin: 0;
+    font-family: var(--ems-font-heading);
+    font-weight: 600;
+    color: var(--ems-color-text-dark);
+}
+
+.ems-form-review__data {
+    margin: 0;
+}
+
+.ems-form-review__item {
+    display: flex;
+    padding: var(--ems-spacing-sm) 0;
+    border-bottom: 1px dotted var(--ems-color-border);
+}
+
+.ems-form-review__item:last-child {
+    border-bottom: none;
+}
+
+.ems-form-review__item dt {
+    flex: 0 0 40%;
+    font-weight: 500;
+    color: var(--ems-color-text-dark);
+    font-size: var(--ems-font-size-small);
+}
+
+.ems-form-review__item dd {
+    flex: 1;
+    margin: 0;
+    color: var(--ems-color-text);
+    word-break: break-word;
+}
+
+.ems-form-review__confirm {
+    margin-top: var(--ems-spacing-lg);
+    padding: var(--ems-spacing-lg);
+    background: var(--ems-color-background-alt);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+}
+
+/* --------------------------------------------------------------------------
+   Multi-Step Form Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .ems-form-progress__list {
+        flex-direction: column;
+        gap: var(--ems-spacing-sm);
+    }
+
+    .ems-form-progress__list::before {
+        display: none;
+    }
+
+    .ems-form-progress__step {
+        flex-direction: row;
+        text-align: left;
+        gap: var(--ems-spacing-sm);
+    }
+
+    .ems-form-progress__number {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+        flex-shrink: 0;
+        margin-bottom: 0;
+    }
+
+    .ems-form-progress__title {
+        max-width: none;
+        white-space: normal;
+        font-size: var(--ems-font-size-small);
+    }
+
+    .ems-form-progress__step span,
+    .ems-form-progress__step button {
+        flex-direction: row;
+        gap: var(--ems-spacing-sm);
+    }
+
+    .ems-form-review__item {
+        flex-direction: column;
+        gap: var(--ems-spacing-xs);
+    }
+
+    .ems-form-review__item dt {
+        flex: none;
+    }
+
+    .ems-form-navigation {
+        flex-direction: column-reverse;
+        gap: var(--ems-spacing-sm);
+    }
+
+    .ems-form-navigation .ems-btn {
+        width: 100%;
     }
 }

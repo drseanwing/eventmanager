@@ -26,6 +26,7 @@
 			this.initFileUploads();
 			this.initBulkActions();
 			this.initMetaBoxes();
+			this.initSponsorship();
 		},
 
 		/**
@@ -393,6 +394,579 @@
 				e.preventDefault();
 				$(this).closest('.ems-ticket-row').remove();
 			});
+		},
+
+		// ==========================================
+		// SPONSORSHIP MANAGEMENT
+		// ==========================================
+
+		/**
+		 * Initialize sponsorship meta box functionality
+		 */
+		initSponsorship: function() {
+			// Only run on event edit screens
+			if (!$('#ems-sponsorship-settings').length) {
+				return;
+			}
+
+			this.initSponsorshipToggles();
+			this.initSponsorshipLevels();
+			this.initSponsorSearch();
+			this.initSponsorLinking();
+		},
+
+		/**
+		 * Toggle visibility of sponsorship sections
+		 */
+		initSponsorshipToggles: function() {
+			// Toggle levels section when sponsorship enabled/disabled
+			$('#ems_sponsorship_enabled').on('change', function() {
+				if ($(this).is(':checked')) {
+					$('#ems-sponsorship-levels-toggle').slideDown(200);
+				} else {
+					$('#ems-sponsorship-levels-toggle').slideUp(200);
+				}
+			});
+
+			// Toggle levels UI when levels enabled/disabled
+			$('#ems_sponsorship_levels_enabled').on('change', function() {
+				if ($(this).is(':checked')) {
+					$('#ems-sponsorship-levels-ui').slideDown(200);
+				} else {
+					$('#ems-sponsorship-levels-ui').slideUp(200);
+				}
+			});
+		},
+
+		/**
+		 * Initialize sponsorship level management (add, save, delete, populate defaults)
+		 */
+		initSponsorshipLevels: function() {
+			var self = this;
+
+			// Populate defaults button
+			$(document).on('click', '#ems-populate-defaults-btn', function(e) {
+				e.preventDefault();
+				var $button = $(this);
+				var eventId = $button.data('event-id');
+
+				$button.prop('disabled', true).text('Creating...');
+
+				$.ajax({
+					url: ems_admin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_populate_default_levels',
+						nonce: ems_admin.nonce,
+						event_id: eventId
+					},
+					success: function(response) {
+						if (response.success) {
+							self.showSponsorshipNotice(response.data.message, 'success');
+							self.renderLevelRows(response.data.levels);
+							$('#ems-populate-defaults-wrapper').hide();
+							$('#ems-levels-table').show();
+							// Also update the level dropdown for linking
+							self.updateLevelDropdown(response.data.levels);
+						} else {
+							self.showSponsorshipNotice(response.data.message, 'error');
+						}
+					},
+					error: function() {
+						self.showSponsorshipNotice('An error occurred.', 'error');
+					},
+					complete: function() {
+						$button.prop('disabled', false).text('Populate Defaults (Bronze / Silver / Gold)');
+					}
+				});
+			});
+
+			// Add new level button
+			$(document).on('click', '#ems-add-level-btn', function(e) {
+				e.preventDefault();
+				var $button = $(this);
+				var eventId = $button.data('event-id');
+
+				var levelName = $.trim($('#ems-new-level-name').val());
+				if (!levelName) {
+					alert('Level name is required.');
+					return;
+				}
+
+				$button.prop('disabled', true).text('Adding...');
+
+				$.ajax({
+					url: ems_admin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_save_sponsorship_levels',
+						nonce: ems_admin.nonce,
+						event_id: eventId,
+						level_name: levelName,
+						colour: $('#ems-new-level-colour').val(),
+						value_aud: $('#ems-new-level-value').val(),
+						slots_total: $('#ems-new-level-slots').val(),
+						sort_order: $('#ems-new-level-sort').val(),
+						recognition_text: $('#ems-new-level-recognition').val()
+					},
+					success: function(response) {
+						if (response.success) {
+							self.showSponsorshipNotice(response.data.message, 'success');
+							self.appendLevelRow(response.data.level);
+							$('#ems-levels-table').show();
+							$('#ems-populate-defaults-wrapper').hide();
+							// Clear the form
+							$('#ems-new-level-name').val('');
+							$('#ems-new-level-colour').val('#CD7F32');
+							$('#ems-new-level-value').val('');
+							$('#ems-new-level-slots').val('');
+							$('#ems-new-level-sort').val('0');
+							$('#ems-new-level-recognition').val('');
+							// Update dropdown
+							self.addLevelToDropdown(response.data.level);
+						} else {
+							self.showSponsorshipNotice(response.data.message, 'error');
+						}
+					},
+					error: function() {
+						self.showSponsorshipNotice('An error occurred.', 'error');
+					},
+					complete: function() {
+						$button.prop('disabled', false).text('Add Level');
+					}
+				});
+			});
+
+			// Save existing level button
+			$(document).on('click', '.ems-save-level-btn', function(e) {
+				e.preventDefault();
+				var $button = $(this);
+				var levelId = $button.data('level-id');
+				var $row = $button.closest('.ems-level-row');
+
+				$button.prop('disabled', true).text('Saving...');
+
+				$.ajax({
+					url: ems_admin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_save_sponsorship_levels',
+						nonce: ems_admin.nonce,
+						level_id: levelId,
+						level_name: $row.find('.ems-level-name').val(),
+						colour: $row.find('.ems-level-colour').val(),
+						value_aud: $row.find('.ems-level-value').val(),
+						slots_total: $row.find('.ems-level-slots').val(),
+						sort_order: $row.find('.ems-level-sort-order').val(),
+						recognition_text: $row.find('.ems-level-recognition').val()
+					},
+					success: function(response) {
+						if (response.success) {
+							self.showSponsorshipNotice(response.data.message, 'success');
+							// Update dropdown option text
+							$('#ems-sponsor-level-select option[value="' + levelId + '"]').text(response.data.level.level_name);
+						} else {
+							self.showSponsorshipNotice(response.data.message, 'error');
+						}
+					},
+					error: function() {
+						self.showSponsorshipNotice('An error occurred.', 'error');
+					},
+					complete: function() {
+						$button.prop('disabled', false).text('Save');
+					}
+				});
+			});
+
+			// Delete level button
+			$(document).on('click', '.ems-delete-level-btn', function(e) {
+				e.preventDefault();
+				var $button = $(this);
+
+				if ($button.prop('disabled')) {
+					return;
+				}
+
+				if (!confirm('Are you sure you want to delete this level?')) {
+					return;
+				}
+
+				var levelId = $button.data('level-id');
+				var $row = $button.closest('.ems-level-row');
+
+				$button.prop('disabled', true).text('Deleting...');
+
+				$.ajax({
+					url: ems_admin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_delete_sponsorship_level',
+						nonce: ems_admin.nonce,
+						level_id: levelId
+					},
+					success: function(response) {
+						if (response.success) {
+							$row.fadeOut(200, function() {
+								$(this).remove();
+								// Show populate defaults if no rows remain
+								if ($('#ems-levels-tbody tr').length === 0) {
+									$('#ems-levels-table').hide();
+									$('#ems-populate-defaults-wrapper').show();
+								}
+							});
+							self.showSponsorshipNotice(response.data.message, 'success');
+							// Remove from dropdown
+							$('#ems-sponsor-level-select option[value="' + levelId + '"]').remove();
+						} else {
+							self.showSponsorshipNotice(response.data.message, 'error');
+							$button.prop('disabled', false).text('Delete');
+						}
+					},
+					error: function() {
+						self.showSponsorshipNotice('An error occurred.', 'error');
+						$button.prop('disabled', false).text('Delete');
+					}
+				});
+			});
+		},
+
+		/**
+		 * Render level rows into the table (used after populate defaults)
+		 */
+		renderLevelRows: function(levels) {
+			var $tbody = $('#ems-levels-tbody');
+			$tbody.empty();
+
+			for (var i = 0; i < levels.length; i++) {
+				this.appendLevelRow(levels[i]);
+			}
+		},
+
+		/**
+		 * Append a single level row to the table
+		 */
+		appendLevelRow: function(level) {
+			var deleteDisabled = parseInt(level.slots_filled, 10) > 0 ? ' disabled title="Cannot delete: sponsors linked"' : '';
+
+			var row = '<tr class="ems-level-row" data-level-id="' + level.id + '">' +
+				'<td><input type="number" class="ems-level-sort-order small-text" value="' + level.sort_order + '" min="0" style="width: 50px;" /></td>' +
+				'<td><input type="text" class="ems-level-name" value="' + this.escAttr(level.level_name) + '" style="width: 100%;" /></td>' +
+				'<td><input type="color" class="ems-level-colour" value="' + level.colour + '" /></td>' +
+				'<td><input type="number" class="ems-level-value small-text" value="' + (level.value_aud || '') + '" min="0" step="0.01" style="width: 90px;" /></td>' +
+				'<td><input type="number" class="ems-level-slots small-text" value="' + (level.slots_total || '') + '" min="0" style="width: 60px;" /></td>' +
+				'<td><span class="ems-level-filled">' + level.slots_filled + '</span></td>' +
+				'<td><textarea class="ems-level-recognition" rows="2" style="width: 100%;">' + this.escHtml(level.recognition_text || '') + '</textarea></td>' +
+				'<td>' +
+				'<button type="button" class="button button-small ems-save-level-btn" data-level-id="' + level.id + '">Save</button> ' +
+				'<button type="button" class="button button-small button-link-delete ems-delete-level-btn" data-level-id="' + level.id + '"' + deleteDisabled + '>Delete</button>' +
+				'</td>' +
+				'</tr>';
+
+			$('#ems-levels-tbody').append(row);
+		},
+
+		/**
+		 * Update the level dropdown after populating defaults
+		 */
+		updateLevelDropdown: function(levels) {
+			var $select = $('#ems-sponsor-level-select');
+			// Keep the "No Level" option
+			$select.find('option:not(:first)').remove();
+
+			for (var i = 0; i < levels.length; i++) {
+				$select.append('<option value="' + levels[i].id + '">' + this.escHtml(levels[i].level_name) + '</option>');
+			}
+		},
+
+		/**
+		 * Add a single level to the dropdown
+		 */
+		addLevelToDropdown: function(level) {
+			$('#ems-sponsor-level-select').append(
+				'<option value="' + level.id + '">' + this.escHtml(level.level_name) + '</option>'
+			);
+		},
+
+		/**
+		 * Initialize sponsor autocomplete search
+		 */
+		initSponsorSearch: function() {
+			var self = this;
+			var searchTimer = null;
+
+			$('#ems-sponsor-search').on('input', function() {
+				var $input = $(this);
+				var query = $.trim($input.val());
+				var $results = $('#ems-sponsor-search-results');
+
+				// Clear selection
+				$('#ems-sponsor-search-id').val('');
+
+				if (searchTimer) {
+					clearTimeout(searchTimer);
+				}
+
+				if (query.length < 2) {
+					$results.hide().empty();
+					return;
+				}
+
+				searchTimer = setTimeout(function() {
+					$.ajax({
+						url: ems_admin.ajax_url,
+						type: 'POST',
+						data: {
+							action: 'ems_search_sponsors',
+							nonce: ems_admin.nonce,
+							search: query
+						},
+						success: function(response) {
+							$results.empty();
+							if (response.success && response.data.sponsors.length > 0) {
+								for (var i = 0; i < response.data.sponsors.length; i++) {
+									var sp = response.data.sponsors[i];
+									$results.append(
+										'<div class="ems-autocomplete-item" data-id="' + sp.id + '">' +
+										self.escHtml(sp.title) +
+										'</div>'
+									);
+								}
+								$results.show();
+							} else {
+								$results.append('<div class="ems-autocomplete-empty">No sponsors found</div>');
+								$results.show();
+							}
+						}
+					});
+				}, 300);
+			});
+
+			// Click on autocomplete result
+			$(document).on('click', '.ems-autocomplete-item', function() {
+				var $item = $(this);
+				$('#ems-sponsor-search').val($item.text());
+				$('#ems-sponsor-search-id').val($item.data('id'));
+				$('#ems-sponsor-search-results').hide().empty();
+			});
+
+			// Hide results when clicking outside
+			$(document).on('click', function(e) {
+				if (!$(e.target).closest('#ems-sponsor-search, #ems-sponsor-search-results').length) {
+					$('#ems-sponsor-search-results').hide();
+				}
+			});
+		},
+
+		/**
+		 * Initialize sponsor link/unlink functionality
+		 */
+		initSponsorLinking: function() {
+			var self = this;
+
+			// Link sponsor button
+			$(document).on('click', '#ems-link-sponsor-btn', function(e) {
+				e.preventDefault();
+				var $button = $(this);
+				var eventId = $('#ems-event-id').val();
+				var sponsorId = $('#ems-sponsor-search-id').val();
+				var levelId = $('#ems-sponsor-level-select').val();
+
+				if (!sponsorId) {
+					alert('Please search for and select a sponsor first.');
+					return;
+				}
+
+				$button.prop('disabled', true).text('Linking...');
+
+				$.ajax({
+					url: ems_admin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_link_sponsor_to_event',
+						nonce: ems_admin.nonce,
+						event_id: eventId,
+						sponsor_id: sponsorId,
+						level_id: levelId || 0
+					},
+					success: function(response) {
+						if (response.success) {
+							self.showSponsorshipNotice(response.data.message, 'success');
+							// Remove "no sponsors" row
+							$('#ems-linked-sponsors-table .ems-no-sponsors-row').remove();
+							// Append new row
+							self.appendSponsorRow(response.data);
+							// Clear search
+							$('#ems-sponsor-search').val('');
+							$('#ems-sponsor-search-id').val('');
+							$('#ems-sponsor-level-select').val('');
+							// Update filled count in levels table if applicable
+							if (response.data.level_id) {
+								self.updateFilledCount(response.data.level_id, 1);
+							}
+						} else {
+							self.showSponsorshipNotice(response.data.message, 'error');
+						}
+					},
+					error: function() {
+						self.showSponsorshipNotice('An error occurred.', 'error');
+					},
+					complete: function() {
+						$button.prop('disabled', false).text('Link Sponsor');
+					}
+				});
+			});
+
+			// Unlink sponsor button
+			$(document).on('click', '.ems-unlink-sponsor-btn', function(e) {
+				e.preventDefault();
+				if (!confirm('Are you sure you want to unlink this sponsor?')) {
+					return;
+				}
+
+				var $button = $(this);
+				var $row = $button.closest('tr');
+				var eventId = $button.data('event-id');
+				var sponsorId = $button.data('sponsor-id');
+
+				$button.prop('disabled', true).text('Unlinking...');
+
+				$.ajax({
+					url: ems_admin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_unlink_sponsor_from_event',
+						nonce: ems_admin.nonce,
+						event_id: eventId,
+						sponsor_id: sponsorId
+					},
+					success: function(response) {
+						if (response.success) {
+							var levelId = response.data.level_id;
+							$row.fadeOut(200, function() {
+								$(this).remove();
+								// Show empty message if no sponsors remain
+								if ($('#ems-linked-sponsors-table tbody tr').length === 0) {
+									$('#ems-linked-sponsors-table tbody').append(
+										'<tr class="ems-no-sponsors-row"><td colspan="4"><em>No sponsors linked to this event yet.</em></td></tr>'
+									);
+								}
+							});
+							self.showSponsorshipNotice(response.data.message, 'success');
+							// Update filled count
+							if (levelId) {
+								self.updateFilledCount(levelId, -1);
+							}
+						} else {
+							self.showSponsorshipNotice(response.data.message, 'error');
+							$button.prop('disabled', false).text('Unlink');
+						}
+					},
+					error: function() {
+						self.showSponsorshipNotice('An error occurred.', 'error');
+						$button.prop('disabled', false).text('Unlink');
+					}
+				});
+			});
+		},
+
+		/**
+		 * Append a linked sponsor row to the table
+		 */
+		appendSponsorRow: function(data) {
+			var levelCell = '';
+			if (data.level_name) {
+				var contrastColor = this.getContrastColor(data.level_colour);
+				levelCell = '<span class="ems-level-pill" style="background-color: ' + data.level_colour + '; color: ' + contrastColor + ';">' +
+					this.escHtml(data.level_name) + '</span>';
+			} else {
+				levelCell = '<em>None</em>';
+			}
+
+			var eventId = $('#ems-event-id').val();
+			var row = '<tr data-sponsor-id="' + data.sponsor_id + '" data-level-id="' + (data.level_id || '') + '">' +
+				'<td><a href="' + data.sponsor_url + '">' + this.escHtml(data.sponsor_name) + '</a></td>' +
+				'<td>' + levelCell + '</td>' +
+				'<td>' + this.escHtml(data.linked_date) + '</td>' +
+				'<td><button type="button" class="button button-small ems-unlink-sponsor-btn" data-sponsor-id="' + data.sponsor_id + '" data-event-id="' + eventId + '">Unlink</button></td>' +
+				'</tr>';
+
+			$('#ems-linked-sponsors-table tbody').append(row);
+		},
+
+		/**
+		 * Update the filled count display in the levels table
+		 */
+		updateFilledCount: function(levelId, delta) {
+			var $row = $('#ems-levels-tbody .ems-level-row[data-level-id="' + levelId + '"]');
+			if ($row.length) {
+				var $filled = $row.find('.ems-level-filled');
+				var current = parseInt($filled.text(), 10) || 0;
+				var updated = Math.max(0, current + delta);
+				$filled.text(updated);
+
+				// Enable/disable delete button
+				var $deleteBtn = $row.find('.ems-delete-level-btn');
+				if (updated > 0) {
+					$deleteBtn.prop('disabled', true).attr('title', 'Cannot delete: sponsors linked');
+				} else {
+					$deleteBtn.prop('disabled', false).removeAttr('title');
+				}
+			}
+		},
+
+		/**
+		 * Show a notice within the sponsorship meta box
+		 */
+		showSponsorshipNotice: function(message, type) {
+			type = type || 'info';
+			var cssClass = type === 'error' ? 'notice-error' : 'notice-success';
+
+			var $notice = $('<div class="notice ' + cssClass + ' inline ems-sponsorship-notice" style="margin: 10px 0;"><p>' + message + '</p></div>');
+
+			// Remove any previous notices
+			$('.ems-sponsorship-notice').remove();
+
+			$('#ems-sponsorship-settings').prepend($notice);
+
+			setTimeout(function() {
+				$notice.fadeOut(300, function() {
+					$(this).remove();
+				});
+			}, 4000);
+		},
+
+		/**
+		 * Get contrasting text colour for a background hex colour
+		 */
+		getContrastColor: function(hex) {
+			hex = hex.replace('#', '');
+			if (hex.length === 3) {
+				hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+			}
+			var r = parseInt(hex.substr(0, 2), 16);
+			var g = parseInt(hex.substr(2, 2), 16);
+			var b = parseInt(hex.substr(4, 2), 16);
+			var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+			return (yiq >= 128) ? '#000000' : '#ffffff';
+		},
+
+		/**
+		 * Escape HTML entities
+		 */
+		escHtml: function(str) {
+			if (!str) return '';
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		},
+
+		/**
+		 * Escape for use in HTML attributes
+		 */
+		escAttr: function(str) {
+			return this.escHtml(str);
 		},
 
 		/**

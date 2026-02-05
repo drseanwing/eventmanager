@@ -213,6 +213,36 @@ class EMS_Admin {
 			'ems-abstract-detail',
 			array( $this, 'display_abstract_detail' )
 		);
+
+		// Add Sponsor (visible submenu)
+		add_submenu_page(
+			'ems-dashboard',
+			__( 'Add Sponsor', 'event-management-system' ),
+			__( 'Add Sponsor', 'event-management-system' ),
+			'manage_options',
+			'ems-add-sponsor',
+			array( $this, 'display_add_sponsor' )
+		);
+
+		// EOI Submissions (visible submenu)
+		add_submenu_page(
+			'ems-dashboard',
+			__( 'EOI Submissions', 'event-management-system' ),
+			__( 'EOI Submissions', 'event-management-system' ),
+			'manage_options',
+			'ems-eoi-submissions',
+			array( $this, 'display_eoi_submissions' )
+		);
+
+		// EOI Detail (hidden page - accessed via link)
+		add_submenu_page(
+			null, // Hidden from menu
+			__( 'EOI Details', 'event-management-system' ),
+			__( 'EOI Details', 'event-management-system' ),
+			'manage_options',
+			'ems-eoi-detail',
+			array( $this, 'display_eoi_detail' )
+		);
 	}
 
 	// ==========================================
@@ -1931,5 +1961,788 @@ class EMS_Admin {
 		// Redirect back to abstract detail page
 		wp_safe_redirect( admin_url( 'admin.php?page=ems-abstract-detail&abstract_id=' . $abstract_id . '&updated=1' ) );
 		exit;
+	}
+
+	// ==========================================
+	// SPONSOR MANAGEMENT
+	// ==========================================
+
+	/**
+	 * Display the Add Sponsor page.
+	 *
+	 * Provides a form to manually create a sponsor user account
+	 * and linked ems_sponsor post.
+	 *
+	 * @since 1.5.0
+	 */
+	public function display_add_sponsor() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have permission to access this page.', 'event-management-system' ) );
+		}
+
+		// Process form submission
+		$message = '';
+		$error   = '';
+		if ( isset( $_POST['ems_add_sponsor_nonce'] ) && wp_verify_nonce( $_POST['ems_add_sponsor_nonce'], 'ems_add_sponsor' ) ) {
+			$result = $this->process_add_sponsor();
+			if ( is_wp_error( $result ) ) {
+				$error = $result->get_error_message();
+			} else {
+				$message = sprintf(
+					__( 'Sponsor created successfully. <a href="%s">Edit sponsor</a>', 'event-management-system' ),
+					esc_url( get_edit_post_link( $result ) )
+				);
+			}
+		}
+
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Add Sponsor Account', 'event-management-system' ); ?></h1>
+
+			<?php if ( $message ) : ?>
+				<div class="notice notice-success"><p><?php echo wp_kses_post( $message ); ?></p></div>
+			<?php endif; ?>
+
+			<?php if ( $error ) : ?>
+				<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
+			<?php endif; ?>
+
+			<form method="post">
+				<?php wp_nonce_field( 'ems_add_sponsor', 'ems_add_sponsor_nonce' ); ?>
+
+				<table class="form-table">
+					<tr>
+						<th><label for="sponsor_legal_name"><?php esc_html_e( 'Legal Name', 'event-management-system' ); ?> <span class="required">*</span></label></th>
+						<td><input type="text" id="sponsor_legal_name" name="sponsor_legal_name" value="<?php echo esc_attr( $_POST['sponsor_legal_name'] ?? '' ); ?>" class="regular-text" required></td>
+					</tr>
+					<tr>
+						<th><label for="sponsor_trading_name"><?php esc_html_e( 'Trading Name', 'event-management-system' ); ?></label></th>
+						<td><input type="text" id="sponsor_trading_name" name="sponsor_trading_name" value="<?php echo esc_attr( $_POST['sponsor_trading_name'] ?? '' ); ?>" class="regular-text"></td>
+					</tr>
+					<tr>
+						<th><label for="sponsor_abn"><?php esc_html_e( 'ABN', 'event-management-system' ); ?></label></th>
+						<td><input type="text" id="sponsor_abn" name="sponsor_abn" value="<?php echo esc_attr( $_POST['sponsor_abn'] ?? '' ); ?>" class="regular-text"></td>
+					</tr>
+					<tr>
+						<th><label for="sponsor_contact_email"><?php esc_html_e( 'Contact Email', 'event-management-system' ); ?> <span class="required">*</span></label></th>
+						<td><input type="email" id="sponsor_contact_email" name="sponsor_contact_email" value="<?php echo esc_attr( $_POST['sponsor_contact_email'] ?? '' ); ?>" class="regular-text" required></td>
+					</tr>
+					<tr>
+						<th><label for="sponsor_contact_name"><?php esc_html_e( 'Contact Name', 'event-management-system' ); ?> <span class="required">*</span></label></th>
+						<td><input type="text" id="sponsor_contact_name" name="sponsor_contact_name" value="<?php echo esc_attr( $_POST['sponsor_contact_name'] ?? '' ); ?>" class="regular-text" required></td>
+					</tr>
+				</table>
+
+				<?php submit_button( __( 'Create Sponsor Account', 'event-management-system' ) ); ?>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Process the manual sponsor account creation.
+	 *
+	 * Creates a WordPress user with ems_sponsor role, an ems_sponsor post,
+	 * and links them via user meta.
+	 *
+	 * @since 1.5.0
+	 * @return int|WP_Error Post ID on success, WP_Error on failure.
+	 */
+	private function process_add_sponsor() {
+		$legal_name    = sanitize_text_field( $_POST['sponsor_legal_name'] ?? '' );
+		$trading_name  = sanitize_text_field( $_POST['sponsor_trading_name'] ?? '' );
+		$abn           = sanitize_text_field( $_POST['sponsor_abn'] ?? '' );
+		$contact_email = sanitize_email( $_POST['sponsor_contact_email'] ?? '' );
+		$contact_name  = sanitize_text_field( $_POST['sponsor_contact_name'] ?? '' );
+
+		// Validate required fields
+		if ( empty( $legal_name ) ) {
+			return new WP_Error( 'missing_legal_name', __( 'Legal name is required.', 'event-management-system' ) );
+		}
+		if ( empty( $contact_email ) || ! is_email( $contact_email ) ) {
+			return new WP_Error( 'invalid_email', __( 'A valid contact email is required.', 'event-management-system' ) );
+		}
+		if ( empty( $contact_name ) ) {
+			return new WP_Error( 'missing_contact_name', __( 'Contact name is required.', 'event-management-system' ) );
+		}
+
+		// Check if user already exists
+		$existing_user = get_user_by( 'email', $contact_email );
+		if ( $existing_user ) {
+			// Use existing user but ensure they have the sponsor role
+			$existing_user->add_role( 'ems_sponsor' );
+			$user_id = $existing_user->ID;
+		} else {
+			// Create WordPress user
+			$username = sanitize_user( strtolower( str_replace( ' ', '.', $contact_name ) ) );
+			// Ensure unique username
+			$base_username = $username;
+			$counter = 1;
+			while ( username_exists( $username ) ) {
+				$username = $base_username . $counter;
+				$counter++;
+			}
+
+			$password = wp_generate_password( 16, true, true );
+			$user_id = wp_insert_user( array(
+				'user_login'   => $username,
+				'user_email'   => $contact_email,
+				'user_pass'    => $password,
+				'display_name' => $contact_name,
+				'role'         => 'ems_sponsor',
+			) );
+
+			if ( is_wp_error( $user_id ) ) {
+				return $user_id;
+			}
+		}
+
+		// Create sponsor post
+		$post_title = ! empty( $trading_name ) ? $trading_name : $legal_name;
+		$post_id = wp_insert_post( array(
+			'post_type'   => 'ems_sponsor',
+			'post_title'  => $post_title,
+			'post_status' => 'publish',
+			'post_author' => get_current_user_id(),
+		) );
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		// Set sponsor meta
+		EMS_Sponsor_Meta::update_sponsor_meta( $post_id, array(
+			'legal_name'    => $legal_name,
+			'trading_name'  => $trading_name,
+			'abn'           => $abn,
+			'contact_email' => $contact_email,
+			'contact_name'  => $contact_name,
+		) );
+
+		// Link user to sponsor post
+		update_user_meta( $user_id, '_ems_sponsor_id', $post_id );
+		update_post_meta( $post_id, '_ems_sponsor_user_id', $user_id );
+
+		$this->logger->info(
+			sprintf( 'Sponsor account created: post #%d, user #%d (%s)', $post_id, $user_id, $legal_name ),
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		return $post_id;
+	}
+
+	// ==========================================
+	// EOI SUBMISSIONS
+	// ==========================================
+
+	/**
+	 * Display the EOI Submissions list page.
+	 *
+	 * @since 1.5.0
+	 */
+	public function display_eoi_submissions() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have permission to access this page.', 'event-management-system' ) );
+		}
+
+		// Handle bulk actions
+		$this->handle_eoi_bulk_actions();
+
+		require_once EMS_PLUGIN_DIR . 'admin/views/admin-page-eoi-list.php';
+	}
+
+	/**
+	 * Display the EOI Detail/Review page.
+	 *
+	 * @since 1.5.0
+	 */
+	public function display_eoi_detail() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have permission to access this page.', 'event-management-system' ) );
+		}
+
+		require_once EMS_PLUGIN_DIR . 'admin/views/admin-page-eoi-detail.php';
+	}
+
+	/**
+	 * Handle EOI bulk actions (approve/reject).
+	 *
+	 * @since 1.5.0
+	 */
+	private function handle_eoi_bulk_actions() {
+		if ( ! isset( $_POST['ems_eoi_bulk_nonce'] ) || ! wp_verify_nonce( $_POST['ems_eoi_bulk_nonce'], 'ems_eoi_bulk_action' ) ) {
+			return;
+		}
+
+		$action = sanitize_text_field( $_POST['bulk_action'] ?? '' );
+		$eoi_ids = array_map( 'absint', $_POST['eoi_ids'] ?? array() );
+
+		if ( empty( $action ) || empty( $eoi_ids ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'ems_sponsor_eoi';
+
+		foreach ( $eoi_ids as $eoi_id ) {
+			if ( 'approve' === $action ) {
+				$wpdb->update(
+					$table,
+					array(
+						'status'      => 'approved',
+						'reviewed_at' => current_time( 'mysql' ),
+						'reviewed_by' => get_current_user_id(),
+					),
+					array( 'id' => $eoi_id ),
+					array( '%s', '%s', '%d' ),
+					array( '%d' )
+				);
+			} elseif ( 'reject' === $action ) {
+				$wpdb->update(
+					$table,
+					array(
+						'status'      => 'rejected',
+						'reviewed_at' => current_time( 'mysql' ),
+						'reviewed_by' => get_current_user_id(),
+					),
+					array( 'id' => $eoi_id ),
+					array( '%s', '%s', '%d' ),
+					array( '%d' )
+				);
+			}
+		}
+
+		$this->logger->info(
+			sprintf( 'Bulk EOI action "%s" applied to %d submissions', $action, count( $eoi_ids ) ),
+			EMS_Logger::CONTEXT_GENERAL
+		);
+	}
+
+	/**
+	 * AJAX handler for EOI approval.
+	 *
+	 * Approves an EOI, links sponsor to event, decrements slots.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_eoi_approve() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		$eoi_id   = absint( $_POST['eoi_id'] ?? 0 );
+		$level_id = absint( $_POST['level_id'] ?? 0 );
+
+		if ( ! $eoi_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid EOI ID.', 'event-management-system' ) ) );
+		}
+
+		global $wpdb;
+		$eoi_table    = $wpdb->prefix . 'ems_sponsor_eoi';
+		$levels_table = $wpdb->prefix . 'ems_sponsorship_levels';
+
+		// Get the EOI
+		$eoi = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$eoi_table} WHERE id = %d", $eoi_id ) );
+		if ( ! $eoi ) {
+			wp_send_json_error( array( 'message' => __( 'EOI not found.', 'event-management-system' ) ) );
+		}
+
+		// Update EOI status
+		$wpdb->update(
+			$eoi_table,
+			array(
+				'status'      => 'approved',
+				'reviewed_at' => current_time( 'mysql' ),
+				'reviewed_by' => get_current_user_id(),
+			),
+			array( 'id' => $eoi_id ),
+			array( '%s', '%s', '%d' ),
+			array( '%d' )
+		);
+
+		// Decrement available slots if a level is assigned
+		if ( $level_id ) {
+			$wpdb->query( $wpdb->prepare(
+				"UPDATE {$levels_table} SET slots_filled = slots_filled + 1 WHERE id = %d AND (slots_total IS NULL OR slots_filled < slots_total)",
+				$level_id
+			) );
+		}
+
+		$this->logger->info(
+			sprintf( 'EOI #%d approved for sponsor #%d, event #%d by user #%d', $eoi_id, $eoi->sponsor_id, $eoi->event_id, get_current_user_id() ),
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		wp_send_json_success( array( 'message' => __( 'EOI approved successfully.', 'event-management-system' ) ) );
+	}
+
+	/**
+	 * AJAX handler for EOI rejection.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_eoi_reject() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		$eoi_id = absint( $_POST['eoi_id'] ?? 0 );
+		$reason = sanitize_textarea_field( $_POST['reason'] ?? '' );
+
+		if ( ! $eoi_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid EOI ID.', 'event-management-system' ) ) );
+		}
+
+		global $wpdb;
+		$eoi_table = $wpdb->prefix . 'ems_sponsor_eoi';
+
+		$wpdb->update(
+			$eoi_table,
+			array(
+				'status'       => 'rejected',
+				'reviewed_at'  => current_time( 'mysql' ),
+				'reviewed_by'  => get_current_user_id(),
+				'review_notes' => $reason,
+			),
+			array( 'id' => $eoi_id ),
+			array( '%s', '%s', '%d', '%s' ),
+			array( '%d' )
+		);
+
+		$this->logger->info(
+			sprintf( 'EOI #%d rejected by user #%d. Reason: %s', $eoi_id, get_current_user_id(), $reason ),
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		wp_send_json_success( array( 'message' => __( 'EOI rejected.', 'event-management-system' ) ) );
+	}
+
+	/**
+	 * AJAX handler for EOI request more info.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_eoi_request_info() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		$eoi_id  = absint( $_POST['eoi_id'] ?? 0 );
+		$message = sanitize_textarea_field( $_POST['message'] ?? '' );
+
+		if ( ! $eoi_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid EOI ID.', 'event-management-system' ) ) );
+		}
+
+		global $wpdb;
+		$eoi_table = $wpdb->prefix . 'ems_sponsor_eoi';
+
+		$wpdb->update(
+			$eoi_table,
+			array(
+				'status'       => 'info_requested',
+				'reviewed_at'  => current_time( 'mysql' ),
+				'reviewed_by'  => get_current_user_id(),
+				'review_notes' => $message,
+			),
+			array( 'id' => $eoi_id ),
+			array( '%s', '%s', '%d', '%s' ),
+			array( '%d' )
+		);
+
+		$this->logger->info(
+			sprintf( 'More info requested for EOI #%d by user #%d', $eoi_id, get_current_user_id() ),
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		wp_send_json_success( array( 'message' => __( 'Information request sent.', 'event-management-system' ) ) );
+	}
+
+	// ==========================================
+	// SPONSORSHIP AJAX HANDLERS
+	// ==========================================
+
+	/**
+	 * AJAX: Save (add or update) a sponsorship level.
+	 *
+	 * Handles both adding new levels and updating existing ones.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_save_sponsorship_levels() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$level_id = isset( $_POST['level_id'] ) ? absint( $_POST['level_id'] ) : 0;
+			$event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+
+			$data = array(
+				'level_name'       => isset( $_POST['level_name'] ) ? sanitize_text_field( $_POST['level_name'] ) : '',
+				'colour'           => isset( $_POST['colour'] ) ? sanitize_text_field( $_POST['colour'] ) : '#CD7F32',
+				'value_aud'        => isset( $_POST['value_aud'] ) ? floatval( $_POST['value_aud'] ) : 0,
+				'slots_total'      => isset( $_POST['slots_total'] ) ? absint( $_POST['slots_total'] ) : 0,
+				'recognition_text' => isset( $_POST['recognition_text'] ) ? sanitize_textarea_field( $_POST['recognition_text'] ) : '',
+				'sort_order'       => isset( $_POST['sort_order'] ) ? absint( $_POST['sort_order'] ) : 0,
+			);
+
+			if ( empty( $data['level_name'] ) ) {
+				wp_send_json_error( array( 'message' => __( 'Level name is required.', 'event-management-system' ) ) );
+			}
+
+			$levels_handler = new EMS_Sponsorship_Levels();
+
+			if ( $level_id ) {
+				// Update existing level
+				$result = $levels_handler->update_level( $level_id, $data );
+				if ( $result ) {
+					$level = $levels_handler->get_level( $level_id );
+					wp_send_json_success( array(
+						'message' => __( 'Level updated successfully.', 'event-management-system' ),
+						'level'   => $level,
+					) );
+				} else {
+					wp_send_json_error( array( 'message' => __( 'Failed to update level.', 'event-management-system' ) ) );
+				}
+			} else {
+				// Add new level
+				if ( ! $event_id ) {
+					wp_send_json_error( array( 'message' => __( 'Event ID is required.', 'event-management-system' ) ) );
+				}
+
+				$new_id = $levels_handler->add_level( $event_id, $data );
+				if ( $new_id ) {
+					$level = $levels_handler->get_level( $new_id );
+					wp_send_json_success( array(
+						'message'  => __( 'Level added successfully.', 'event-management-system' ),
+						'level'    => $level,
+						'level_id' => $new_id,
+					) );
+				} else {
+					wp_send_json_error( array( 'message' => __( 'Failed to add level.', 'event-management-system' ) ) );
+				}
+			}
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_save_sponsorship_levels error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX: Populate default sponsorship levels (Bronze/Silver/Gold).
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_populate_default_levels() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+
+			if ( ! $event_id ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid event ID.', 'event-management-system' ) ) );
+			}
+
+			$levels_handler = new EMS_Sponsorship_Levels();
+
+			// Check if levels already exist
+			$existing = $levels_handler->get_event_levels( $event_id );
+			if ( ! empty( $existing ) ) {
+				wp_send_json_error( array( 'message' => __( 'Levels already exist for this event.', 'event-management-system' ) ) );
+			}
+
+			$created_ids = $levels_handler->populate_defaults( $event_id );
+
+			if ( ! empty( $created_ids ) ) {
+				$levels = $levels_handler->get_event_levels( $event_id );
+				wp_send_json_success( array(
+					'message' => sprintf(
+						/* translators: %d: number of levels created */
+						__( '%d default levels created.', 'event-management-system' ),
+						count( $created_ids )
+					),
+					'levels' => $levels,
+				) );
+			} else {
+				wp_send_json_error( array( 'message' => __( 'Failed to create default levels.', 'event-management-system' ) ) );
+			}
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_populate_default_levels error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX: Delete a sponsorship level.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_delete_sponsorship_level() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$level_id = isset( $_POST['level_id'] ) ? absint( $_POST['level_id'] ) : 0;
+
+			if ( ! $level_id ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid level ID.', 'event-management-system' ) ) );
+			}
+
+			$levels_handler = new EMS_Sponsorship_Levels();
+			$result         = $levels_handler->delete_level( $level_id );
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			}
+
+			wp_send_json_success( array(
+				'message' => __( 'Level deleted successfully.', 'event-management-system' ),
+			) );
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_delete_sponsorship_level error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX: Search sponsors by name (autocomplete).
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_search_sponsors() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$search = isset( $_POST['search'] ) ? sanitize_text_field( $_POST['search'] ) : '';
+
+			if ( strlen( $search ) < 2 ) {
+				wp_send_json_success( array( 'sponsors' => array() ) );
+			}
+
+			$sponsors = get_posts( array(
+				'post_type'      => 'ems_sponsor',
+				'posts_per_page' => 10,
+				's'              => $search,
+				'post_status'    => 'publish',
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			) );
+
+			$results = array();
+			foreach ( $sponsors as $sponsor ) {
+				$results[] = array(
+					'id'    => $sponsor->ID,
+					'title' => $sponsor->post_title,
+				);
+			}
+
+			wp_send_json_success( array( 'sponsors' => $results ) );
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_search_sponsors error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX: Link a sponsor to an event with optional level.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_link_sponsor_to_event() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$event_id   = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+			$sponsor_id = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
+			$level_id   = isset( $_POST['level_id'] ) ? absint( $_POST['level_id'] ) : 0;
+
+			if ( ! $event_id || ! $sponsor_id ) {
+				wp_send_json_error( array( 'message' => __( 'Event ID and Sponsor ID are required.', 'event-management-system' ) ) );
+			}
+
+			// Verify sponsor post exists
+			$sponsor = get_post( $sponsor_id );
+			if ( ! $sponsor || 'ems_sponsor' !== $sponsor->post_type ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid sponsor.', 'event-management-system' ) ) );
+			}
+
+			// Get existing linked sponsors
+			$linked = get_post_meta( $event_id, '_ems_linked_sponsors', true );
+			if ( ! is_array( $linked ) ) {
+				$linked = array();
+			}
+
+			// Check if already linked
+			foreach ( $linked as $link ) {
+				if ( intval( $link['sponsor_id'] ) === $sponsor_id ) {
+					wp_send_json_error( array( 'message' => __( 'This sponsor is already linked to this event.', 'event-management-system' ) ) );
+				}
+			}
+
+			// Check slot availability if a level is specified
+			$level_obj = null;
+			if ( $level_id ) {
+				$levels_handler = new EMS_Sponsorship_Levels();
+				$available      = $levels_handler->get_available_slots( $level_id );
+
+				if ( false === $available ) {
+					wp_send_json_error( array( 'message' => __( 'Invalid sponsorship level.', 'event-management-system' ) ) );
+				}
+
+				if ( 0 === $available ) {
+					wp_send_json_error( array( 'message' => __( 'No available slots for this level.', 'event-management-system' ) ) );
+				}
+
+				// Increment filled slots
+				$levels_handler->increment_slots_filled( $level_id );
+				$level_obj = $levels_handler->get_level( $level_id );
+			}
+
+			// Add the link
+			$linked[] = array(
+				'sponsor_id'  => $sponsor_id,
+				'level_id'    => $level_id,
+				'linked_date' => current_time( 'mysql' ),
+			);
+
+			update_post_meta( $event_id, '_ems_linked_sponsors', $linked );
+
+			// Also store a reverse reference on the sponsor
+			$sponsor_events = get_post_meta( $sponsor_id, '_ems_linked_events', true );
+			if ( ! is_array( $sponsor_events ) ) {
+				$sponsor_events = array();
+			}
+			$sponsor_events[] = array(
+				'event_id'    => $event_id,
+				'level_id'    => $level_id,
+				'linked_date' => current_time( 'mysql' ),
+			);
+			update_post_meta( $sponsor_id, '_ems_linked_events', $sponsor_events );
+
+			$this->logger->info(
+				sprintf( 'Sponsor %d linked to event %d (level: %d)', $sponsor_id, $event_id, $level_id ),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			$response_data = array(
+				'message'      => __( 'Sponsor linked successfully.', 'event-management-system' ),
+				'sponsor_id'   => $sponsor_id,
+				'sponsor_name' => $sponsor->post_title,
+				'sponsor_url'  => get_edit_post_link( $sponsor_id, 'raw' ),
+				'level_id'     => $level_id,
+				'level_name'   => $level_obj ? $level_obj->level_name : '',
+				'level_colour' => $level_obj ? $level_obj->colour : '',
+				'linked_date'  => date_i18n( get_option( 'date_format' ) ),
+			);
+
+			wp_send_json_success( $response_data );
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_link_sponsor_to_event error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'event-management-system' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX: Unlink a sponsor from an event.
+	 *
+	 * @since 1.5.0
+	 */
+	public function ajax_unlink_sponsor_from_event() {
+		check_ajax_referer( 'ems_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		try {
+			$event_id   = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+			$sponsor_id = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
+
+			if ( ! $event_id || ! $sponsor_id ) {
+				wp_send_json_error( array( 'message' => __( 'Event ID and Sponsor ID are required.', 'event-management-system' ) ) );
+			}
+
+			// Get existing linked sponsors
+			$linked = get_post_meta( $event_id, '_ems_linked_sponsors', true );
+			if ( ! is_array( $linked ) ) {
+				$linked = array();
+			}
+
+			// Find and remove the link
+			$found      = false;
+			$level_id   = 0;
+			$new_linked = array();
+
+			foreach ( $linked as $link ) {
+				if ( intval( $link['sponsor_id'] ) === $sponsor_id ) {
+					$found    = true;
+					$level_id = intval( $link['level_id'] ?? 0 );
+				} else {
+					$new_linked[] = $link;
+				}
+			}
+
+			if ( ! $found ) {
+				wp_send_json_error( array( 'message' => __( 'Sponsor is not linked to this event.', 'event-management-system' ) ) );
+			}
+
+			// Decrement level slots if applicable
+			if ( $level_id ) {
+				$levels_handler = new EMS_Sponsorship_Levels();
+				$levels_handler->decrement_slots_filled( $level_id );
+			}
+
+			// Update event meta
+			update_post_meta( $event_id, '_ems_linked_sponsors', $new_linked );
+
+			// Update sponsor reverse reference
+			$sponsor_events = get_post_meta( $sponsor_id, '_ems_linked_events', true );
+			if ( is_array( $sponsor_events ) ) {
+				$new_sponsor_events = array();
+				foreach ( $sponsor_events as $se ) {
+					if ( intval( $se['event_id'] ) !== $event_id ) {
+						$new_sponsor_events[] = $se;
+					}
+				}
+				update_post_meta( $sponsor_id, '_ems_linked_events', $new_sponsor_events );
+			}
+
+			$this->logger->info(
+				sprintf( 'Sponsor %d unlinked from event %d', $sponsor_id, $event_id ),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+
+			wp_send_json_success( array(
+				'message'  => __( 'Sponsor unlinked successfully.', 'event-management-system' ),
+				'level_id' => $level_id,
+			) );
+		} catch ( Exception $e ) {
+			$this->logger->error( 'ajax_unlink_sponsor_from_event error: ' . $e->getMessage(), EMS_Logger::CONTEXT_GENERAL );
+			wp_send_json_error( array( 'message' => __( 'An error occurred.', 'event-management-system' ) ) );
+		}
 	}
 }

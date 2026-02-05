@@ -240,6 +240,15 @@ class EMS_CPT_Event {
 			'side',
 			'default'
 		);
+
+		add_meta_box(
+			'ems_event_sponsorship',
+			__( 'Sponsorship Settings', 'event-management-system' ),
+			array( $this, 'render_sponsorship_meta_box' ),
+			self::POST_TYPE,
+			'normal',
+			'default'
+		);
 	}
 
 	/**
@@ -406,6 +415,194 @@ class EMS_CPT_Event {
 		});
 		</script>
 		<?php
+	}
+
+	/**
+	 * Render sponsorship settings meta box
+	 *
+	 * @since 1.5.0
+	 * @param WP_Post $post Post object
+	 */
+	public function render_sponsorship_meta_box( $post ) {
+		$sponsorship_enabled        = (bool) get_post_meta( $post->ID, '_ems_sponsorship_enabled', true );
+		$sponsorship_levels_enabled = (bool) get_post_meta( $post->ID, '_ems_sponsorship_levels_enabled', true );
+
+		// Get levels and linked sponsors for this event
+		$levels_handler = new EMS_Sponsorship_Levels();
+		$levels         = $levels_handler->get_event_levels( $post->ID );
+
+		// Get linked sponsors from post meta
+		$linked_sponsors = get_post_meta( $post->ID, '_ems_linked_sponsors', true );
+		if ( ! is_array( $linked_sponsors ) ) {
+			$linked_sponsors = array();
+		}
+		?>
+		<div id="ems-sponsorship-settings">
+			<table class="form-table">
+				<tr>
+					<th>
+						<label for="ems_sponsorship_enabled">
+							<?php esc_html_e( 'Enable Sponsorship', 'event-management-system' ); ?>
+						</label>
+					</th>
+					<td>
+						<label>
+							<input type="checkbox"
+								name="_ems_sponsorship_enabled"
+								id="ems_sponsorship_enabled"
+								value="1"
+								<?php checked( $sponsorship_enabled ); ?> />
+							<?php esc_html_e( 'Enable Sponsorship for this Event', 'event-management-system' ); ?>
+						</label>
+					</td>
+				</tr>
+			</table>
+
+			<div id="ems-sponsorship-levels-toggle" style="<?php echo $sponsorship_enabled ? '' : 'display:none;'; ?>">
+				<table class="form-table">
+					<tr>
+						<th>
+							<label for="ems_sponsorship_levels_enabled">
+								<?php esc_html_e( 'Sponsorship Levels', 'event-management-system' ); ?>
+							</label>
+						</th>
+						<td>
+							<label>
+								<input type="checkbox"
+									name="_ems_sponsorship_levels_enabled"
+									id="ems_sponsorship_levels_enabled"
+									value="1"
+									<?php checked( $sponsorship_levels_enabled ); ?> />
+								<?php esc_html_e( 'Enable Sponsorship Levels', 'event-management-system' ); ?>
+							</label>
+						</td>
+					</tr>
+				</table>
+
+				<!-- Levels Management UI -->
+				<div id="ems-sponsorship-levels-ui" style="<?php echo $sponsorship_levels_enabled ? '' : 'display:none;'; ?>">
+					<?php
+					include EMS_PLUGIN_DIR . 'admin/views/meta-box-sponsorship-levels.php';
+					?>
+				</div>
+
+				<!-- Linked Sponsors List -->
+				<div id="ems-linked-sponsors-section" style="margin-top: 20px;">
+					<h3><?php esc_html_e( 'Linked Sponsors', 'event-management-system' ); ?></h3>
+
+					<div id="ems-sponsor-link-form" style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border: 1px solid #ddd;">
+						<div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+							<div>
+								<label for="ems-sponsor-search"><?php esc_html_e( 'Search Sponsor:', 'event-management-system' ); ?></label><br>
+								<input type="text"
+									id="ems-sponsor-search"
+									class="regular-text"
+									placeholder="<?php esc_attr_e( 'Type sponsor name...', 'event-management-system' ); ?>"
+									autocomplete="off" />
+								<input type="hidden" id="ems-sponsor-search-id" value="" />
+								<div id="ems-sponsor-search-results" class="ems-autocomplete-results"></div>
+							</div>
+							<div>
+								<label for="ems-sponsor-level-select"><?php esc_html_e( 'Level:', 'event-management-system' ); ?></label><br>
+								<select id="ems-sponsor-level-select">
+									<option value=""><?php esc_html_e( 'No Level', 'event-management-system' ); ?></option>
+									<?php foreach ( $levels as $level ) : ?>
+										<option value="<?php echo esc_attr( $level->id ); ?>">
+											<?php echo esc_html( $level->level_name ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div>
+								<button type="button" id="ems-link-sponsor-btn" class="button button-primary">
+									<?php esc_html_e( 'Link Sponsor', 'event-management-system' ); ?>
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<table id="ems-linked-sponsors-table" class="wp-list-table widefat fixed striped">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Sponsor Name', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Level', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Linked Date', 'event-management-system' ); ?></th>
+								<th><?php esc_html_e( 'Actions', 'event-management-system' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php if ( ! empty( $linked_sponsors ) ) : ?>
+								<?php foreach ( $linked_sponsors as $link ) :
+									$sponsor_post = get_post( $link['sponsor_id'] );
+									if ( ! $sponsor_post ) {
+										continue;
+									}
+									$level_obj = null;
+									if ( ! empty( $link['level_id'] ) ) {
+										$level_obj = $levels_handler->get_level( $link['level_id'] );
+									}
+								?>
+									<tr data-sponsor-id="<?php echo esc_attr( $link['sponsor_id'] ); ?>" data-level-id="<?php echo esc_attr( $link['level_id'] ?? '' ); ?>">
+										<td>
+											<a href="<?php echo esc_url( get_edit_post_link( $link['sponsor_id'] ) ); ?>">
+												<?php echo esc_html( $sponsor_post->post_title ); ?>
+											</a>
+										</td>
+										<td>
+											<?php if ( $level_obj ) : ?>
+												<span class="ems-level-pill" style="background-color: <?php echo esc_attr( $level_obj->colour ); ?>; color: <?php echo esc_attr( self::get_contrast_color( $level_obj->colour ) ); ?>;">
+													<?php echo esc_html( $level_obj->level_name ); ?>
+												</span>
+											<?php else : ?>
+												<em><?php esc_html_e( 'None', 'event-management-system' ); ?></em>
+											<?php endif; ?>
+										</td>
+										<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $link['linked_date'] ) ) ); ?></td>
+										<td>
+											<button type="button"
+												class="button button-small ems-unlink-sponsor-btn"
+												data-sponsor-id="<?php echo esc_attr( $link['sponsor_id'] ); ?>"
+												data-event-id="<?php echo esc_attr( $post->ID ); ?>">
+												<?php esc_html_e( 'Unlink', 'event-management-system' ); ?>
+											</button>
+										</td>
+									</tr>
+								<?php endforeach; ?>
+							<?php else : ?>
+								<tr class="ems-no-sponsors-row">
+									<td colspan="4">
+										<em><?php esc_html_e( 'No sponsors linked to this event yet.', 'event-management-system' ); ?></em>
+									</td>
+								</tr>
+							<?php endif; ?>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<input type="hidden" id="ems-event-id" value="<?php echo esc_attr( $post->ID ); ?>" />
+		<?php
+	}
+
+	/**
+	 * Get a contrasting text colour (black or white) for a background hex colour.
+	 *
+	 * @since 1.5.0
+	 * @param string $hex_color Hex colour code.
+	 * @return string '#000000' or '#ffffff'.
+	 */
+	public static function get_contrast_color( $hex_color ) {
+		$hex = ltrim( $hex_color, '#' );
+		if ( strlen( $hex ) === 3 ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		$r = hexdec( substr( $hex, 0, 2 ) );
+		$g = hexdec( substr( $hex, 2, 2 ) );
+		$b = hexdec( substr( $hex, 4, 2 ) );
+		// YIQ formula
+		$yiq = ( ( $r * 299 ) + ( $g * 587 ) + ( $b * 114 ) ) / 1000;
+		return ( $yiq >= 128 ) ? '#000000' : '#ffffff';
 	}
 
 	/**

@@ -40,3 +40,96 @@
 	background: #f9f9f9;
 	cursor: move;
 }
+
+/* ==========================================
+   Sponsorship Meta Box
+   ========================================== */
+
+/* Level pill badge */
+.ems-level-pill {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
+/* Levels table adjustments */
+#ems-levels-table input[type="text"],
+#ems-levels-table input[type="number"],
+#ems-levels-table textarea {
+	margin: 0;
+}
+
+#ems-levels-table .ems-level-row td {
+	vertical-align: middle;
+	padding: 6px 8px;
+}
+
+#ems-levels-table .ems-level-row .button-small {
+	margin: 2px 0;
+}
+
+/* Autocomplete search results */
+.ems-autocomplete-results {
+	position: absolute;
+	z-index: 100;
+	background: #fff;
+	border: 1px solid #ddd;
+	max-height: 200px;
+	overflow-y: auto;
+	display: none;
+	min-width: 300px;
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.ems-autocomplete-item {
+	padding: 8px 12px;
+	cursor: pointer;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ems-autocomplete-item:hover {
+	background: #f0f7ff;
+}
+
+.ems-autocomplete-item:last-child {
+	border-bottom: none;
+}
+
+.ems-autocomplete-empty {
+	padding: 8px 12px;
+	color: #999;
+	font-style: italic;
+}
+
+/* Sponsor link form */
+#ems-sponsor-link-form {
+	position: relative;
+}
+
+/* Linked sponsors table */
+#ems-linked-sponsors-table .ems-level-pill {
+	font-size: 11px;
+	padding: 2px 8px;
+}
+
+/* Sponsorship notice within meta box */
+.ems-sponsorship-notice {
+	margin: 10px 0 !important;
+}
+
+/* Add level form */
+#ems-add-level-form label {
+	font-weight: 600;
+	font-size: 12px;
+}
+
+/* Levels manager heading */
+#ems-levels-manager h3 {
+	margin-top: 0;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #eee;
+}

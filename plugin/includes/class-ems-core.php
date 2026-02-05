@@ -138,6 +138,11 @@ class EMS_Core {
 
 		// Load sponsor subsystem
 		require_once EMS_PLUGIN_DIR . 'includes/sponsor/class-ems-sponsor-meta.php';
+		require_once EMS_PLUGIN_DIR . 'includes/sponsor/class-ems-sponsorship-levels.php';
+
+		// Load multi-step form framework
+		require_once EMS_PLUGIN_DIR . 'includes/forms/class-ems-form-renderer.php';
+		require_once EMS_PLUGIN_DIR . 'includes/forms/class-ems-multi-step-form.php';
 
 		// Load admin
 		require_once EMS_PLUGIN_DIR . 'admin/class-ems-admin.php';
@@ -371,6 +376,19 @@ class EMS_Core {
 		$this->loader->add_action( 'wp_ajax_ems_save_schedule', $plugin_admin, 'ajax_save_schedule' );
 		$this->loader->add_action( 'wp_ajax_ems_upload_file', $plugin_admin, 'ajax_upload_file' );
 
+		// Sponsorship AJAX handlers
+		$this->loader->add_action( 'wp_ajax_ems_save_sponsorship_levels', $plugin_admin, 'ajax_save_sponsorship_levels' );
+		$this->loader->add_action( 'wp_ajax_ems_populate_default_levels', $plugin_admin, 'ajax_populate_default_levels' );
+		$this->loader->add_action( 'wp_ajax_ems_delete_sponsorship_level', $plugin_admin, 'ajax_delete_sponsorship_level' );
+		$this->loader->add_action( 'wp_ajax_ems_search_sponsors', $plugin_admin, 'ajax_search_sponsors' );
+		$this->loader->add_action( 'wp_ajax_ems_link_sponsor_to_event', $plugin_admin, 'ajax_link_sponsor_to_event' );
+		$this->loader->add_action( 'wp_ajax_ems_unlink_sponsor_from_event', $plugin_admin, 'ajax_unlink_sponsor_from_event' );
+
+		// EOI AJAX handlers
+		$this->loader->add_action( 'wp_ajax_ems_eoi_approve', $plugin_admin, 'ajax_eoi_approve' );
+		$this->loader->add_action( 'wp_ajax_ems_eoi_reject', $plugin_admin, 'ajax_eoi_reject' );
+		$this->loader->add_action( 'wp_ajax_ems_eoi_request_info', $plugin_admin, 'ajax_eoi_request_info' );
+
 		// Admin post handlers
 		$this->loader->add_action( 'admin_post_ems_update_abstract_status', $plugin_admin, 'handle_abstract_status_update' );
 	}
@@ -401,6 +419,14 @@ class EMS_Core {
 
 		$this->loader->add_action( 'wp_ajax_ems_register_session', $plugin_public, 'ajax_register_session' );
 		$this->loader->add_action( 'wp_ajax_ems_cancel_session', $plugin_public, 'ajax_cancel_session' );
+
+		// Multi-step form AJAX handlers
+		$this->loader->add_action( 'wp_ajax_ems_form_validate_step', $plugin_public, 'ajax_form_validate_step' );
+		$this->loader->add_action( 'wp_ajax_nopriv_ems_form_validate_step', $plugin_public, 'ajax_form_validate_step' );
+		$this->loader->add_action( 'wp_ajax_ems_form_save_progress', $plugin_public, 'ajax_form_save_progress' );
+		$this->loader->add_action( 'wp_ajax_nopriv_ems_form_save_progress', $plugin_public, 'ajax_form_save_progress' );
+		$this->loader->add_action( 'wp_ajax_ems_form_submit', $plugin_public, 'ajax_form_submit' );
+		$this->loader->add_action( 'wp_ajax_nopriv_ems_form_submit', $plugin_public, 'ajax_form_submit' );
 
 		// iCal export handler
 		$this->loader->add_action( 'template_redirect', $plugin_public, 'handle_ical_export' );
