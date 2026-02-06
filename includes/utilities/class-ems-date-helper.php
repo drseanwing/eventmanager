@@ -164,7 +164,7 @@ class EMS_Date_Helper {
 			return $datetime_string; // Return original if conversion fails
 		}
 
-		return date_i18n( $format, $timestamp );
+		return wp_date( $format, $timestamp );
 	}
 
 	/**
