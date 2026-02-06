@@ -893,13 +893,28 @@ class EMS_Sponsor_Portal {
 			);
 		}
 
-		// Whitelist of editable fields from portal (organisation + contact only)
+		// Whitelist of editable fields from portal (all onboarding sections)
 		$allowed_fields = array(
+			// Section 1: Organisation Details
 			'legal_name', 'trading_name', 'abn', 'acn',
 			'registered_address', 'website_url', 'country', 'parent_company',
+			// Section 2: Contacts
 			'contact_name', 'contact_role', 'contact_email', 'contact_phone',
 			'signatory_name', 'signatory_title', 'signatory_email',
 			'marketing_contact_name', 'marketing_contact_email',
+			// Section 3: Industry Classification
+			'industry_sectors', 'ma_member', 'mtaa_member', 'other_codes', 'tga_number',
+			// Section 4: Products & Scope
+			'products', 'artg_listings', 'scheduling_class', 'device_class',
+			'non_artg_product', 'off_label', 'tga_safety_alert', 'educational_relation',
+			// Section 5: Legal, Insurance & Compliance
+			'public_liability_confirmed', 'public_liability_insurer', 'public_liability_policy',
+			'product_liability_confirmed', 'professional_indemnity', 'workers_comp_confirmed',
+			'code_compliance_agreed', 'compliance_process', 'adverse_findings',
+			'legal_proceedings', 'transparency_obligations',
+			// Section 6: Conflict of Interest
+			'qld_health_aware', 'personal_relationships', 'procurement_conflicts',
+			'transfers_of_value', 'preferential_treatment_agreed',
 		);
 
 		$filtered_data = array();
@@ -1076,5 +1091,120 @@ class EMS_Sponsor_Portal {
 				'total_size'      => 0,
 			);
 		}
+	}
+
+	/**
+	 * Update sponsor page content (post_content) from the portal.
+	 *
+	 * Validates ownership, then updates the sponsor post's content
+	 * which is displayed on the public sponsor page via the_content().
+	 *
+	 * @since 1.6.0
+	 * @param int    $sponsor_id Sponsor post ID.
+	 * @param string $content    HTML content (will be sanitised with wp_kses_post).
+	 * @return array Result with success status and message.
+	 */
+	public function update_sponsor_page_content( $sponsor_id, $content ) {
+		$sponsor_id = absint( $sponsor_id );
+		$user_id    = get_current_user_id();
+
+		$sponsor = get_post( $sponsor_id );
+		if ( ! $sponsor || 'ems_sponsor' !== $sponsor->post_type ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Invalid sponsor profile.', 'event-management-system' ),
+			);
+		}
+
+		$user_sponsor_id = $this->get_user_sponsor_id( $user_id );
+		if ( ! $user_sponsor_id || absint( $user_sponsor_id ) !== $sponsor_id ) {
+			$this->logger->warning(
+				"Unauthorized page content update: user {$user_id} tried to edit sponsor {$sponsor_id}",
+				EMS_Logger::CONTEXT_SECURITY
+			);
+			return array(
+				'success' => false,
+				'message' => __( 'You do not have permission to edit this page.', 'event-management-system' ),
+			);
+		}
+
+		$result = wp_update_post( array(
+			'ID'           => $sponsor_id,
+			'post_content' => wp_kses_post( $content ),
+		), true );
+
+		if ( is_wp_error( $result ) ) {
+			$this->logger->error(
+				'Page content update failed: ' . $result->get_error_message(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
+			);
+		}
+
+		$this->logger->info(
+			"Sponsor {$sponsor_id} page content updated by user {$user_id}",
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		return array(
+			'success' => true,
+			'message' => __( 'Sponsor page updated successfully.', 'event-management-system' ),
+		);
+	}
+
+	/**
+	 * Update sponsor logo (featured image) from the portal.
+	 *
+	 * @since 1.6.0
+	 * @param int $sponsor_id    Sponsor post ID.
+	 * @param int $attachment_id WordPress attachment ID.
+	 * @return array Result with success status and message.
+	 */
+	public function update_sponsor_logo( $sponsor_id, $attachment_id ) {
+		$sponsor_id    = absint( $sponsor_id );
+		$attachment_id = absint( $attachment_id );
+		$user_id       = get_current_user_id();
+
+		$sponsor = get_post( $sponsor_id );
+		if ( ! $sponsor || 'ems_sponsor' !== $sponsor->post_type ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Invalid sponsor profile.', 'event-management-system' ),
+			);
+		}
+
+		$user_sponsor_id = $this->get_user_sponsor_id( $user_id );
+		if ( ! $user_sponsor_id || absint( $user_sponsor_id ) !== $sponsor_id ) {
+			return array(
+				'success' => false,
+				'message' => __( 'You do not have permission to edit this profile.', 'event-management-system' ),
+			);
+		}
+
+		if ( $attachment_id ) {
+			$attachment = get_post( $attachment_id );
+			if ( ! $attachment || 'attachment' !== $attachment->post_type ) {
+				return array(
+					'success' => false,
+					'message' => __( 'Invalid image selection.', 'event-management-system' ),
+				);
+			}
+			set_post_thumbnail( $sponsor_id, $attachment_id );
+		} else {
+			delete_post_thumbnail( $sponsor_id );
+		}
+
+		$this->logger->info(
+			"Sponsor {$sponsor_id} logo updated by user {$user_id}",
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		return array(
+			'success' => true,
+			'message' => __( 'Logo updated successfully.', 'event-management-system' ),
+		);
 	}
 }

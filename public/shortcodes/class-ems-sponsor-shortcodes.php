@@ -71,6 +71,8 @@ class EMS_Sponsor_Shortcodes {
 		add_action( 'wp_ajax_ems_delete_sponsor_file', array( $this, 'ajax_delete_sponsor_file' ) );
 		add_action( 'wp_ajax_ems_save_sponsor_profile', array( $this, 'ajax_save_sponsor_profile' ) );
 		add_action( 'wp_ajax_ems_get_eoi_details', array( $this, 'ajax_get_eoi_details' ) );
+		add_action( 'wp_ajax_ems_save_sponsor_page', array( $this, 'ajax_save_sponsor_page' ) );
+		add_action( 'wp_ajax_ems_save_sponsor_logo', array( $this, 'ajax_save_sponsor_logo' ) );
 	}
 
 	/**
@@ -124,7 +126,7 @@ class EMS_Sponsor_Shortcodes {
 		// Determine active tab
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only
 		$active_tab = isset( $_GET['portal_tab'] ) ? sanitize_key( $_GET['portal_tab'] ) : 'dashboard';
-		$valid_tabs = array( 'dashboard', 'profile', 'applications' );
+		$valid_tabs = array( 'dashboard', 'profile', 'page', 'applications' );
 		if ( ! in_array( $active_tab, $valid_tabs, true ) ) {
 			$active_tab = 'dashboard';
 		}
@@ -147,6 +149,9 @@ class EMS_Sponsor_Shortcodes {
 				<button type="button" class="ems-portal-tab <?php echo 'profile' === $active_tab ? 'ems-portal-tab--active' : ''; ?>" role="tab" aria-selected="<?php echo 'profile' === $active_tab ? 'true' : 'false'; ?>" aria-controls="ems-tab-profile" data-tab="profile">
 					<?php esc_html_e( 'Organisation Profile', 'event-management-system' ); ?>
 				</button>
+				<button type="button" class="ems-portal-tab <?php echo 'page' === $active_tab ? 'ems-portal-tab--active' : ''; ?>" role="tab" aria-selected="<?php echo 'page' === $active_tab ? 'true' : 'false'; ?>" aria-controls="ems-tab-page" data-tab="page">
+					<?php esc_html_e( 'My Sponsor Page', 'event-management-system' ); ?>
+				</button>
 				<button type="button" class="ems-portal-tab <?php echo 'applications' === $active_tab ? 'ems-portal-tab--active' : ''; ?>" role="tab" aria-selected="<?php echo 'applications' === $active_tab ? 'true' : 'false'; ?>" aria-controls="ems-tab-applications" data-tab="applications">
 					<?php esc_html_e( 'Sponsorship Applications', 'event-management-system' ); ?>
 					<?php if ( ! empty( $eois ) ) : ?>
@@ -163,6 +168,11 @@ class EMS_Sponsor_Shortcodes {
 			<!-- Tab: Organisation Profile -->
 			<div class="ems-portal-tab-content <?php echo 'profile' === $active_tab ? 'ems-portal-tab-content--active' : ''; ?>" id="ems-tab-profile" role="tabpanel">
 				<?php $this->render_profile_tab( $sponsor_id, $meta ); ?>
+			</div>
+
+			<!-- Tab: My Sponsor Page -->
+			<div class="ems-portal-tab-content <?php echo 'page' === $active_tab ? 'ems-portal-tab-content--active' : ''; ?>" id="ems-tab-page" role="tabpanel">
+				<?php $this->render_page_tab( $sponsor_id, $sponsor ); ?>
 			</div>
 
 			<!-- Tab: Sponsorship Applications -->
@@ -543,6 +553,7 @@ class EMS_Sponsor_Shortcodes {
 	 * @return void
 	 */
 	private function render_profile_tab( $sponsor_id, $meta ) {
+		$industry_sectors = is_array( $meta['industry_sectors'] ) ? $meta['industry_sectors'] : array();
 		?>
 		<div class="ems-sponsor-profile-section">
 			<div class="ems-profile-header">
@@ -592,6 +603,74 @@ class EMS_Sponsor_Shortcodes {
 					<div class="ems-profile-grid">
 						<?php $this->render_profile_field( __( 'Marketing Contact Name', 'event-management-system' ), $meta['marketing_contact_name'] ); ?>
 						<?php $this->render_profile_field( __( 'Marketing Contact Email', 'event-management-system' ), $meta['marketing_contact_email'], 'email' ); ?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Industry Classification', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php
+						$sector_labels = array();
+						foreach ( $industry_sectors as $sector ) {
+							if ( isset( EMS_Sponsor_Meta::INDUSTRY_SECTORS[ $sector ] ) ) {
+								$sector_labels[] = EMS_Sponsor_Meta::INDUSTRY_SECTORS[ $sector ];
+							}
+						}
+						$this->render_profile_field( __( 'Industry Sectors', 'event-management-system' ), implode( ', ', $sector_labels ) );
+						$this->render_profile_field( __( 'Medicines Australia Member', 'event-management-system' ), $meta['ma_member'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'MTAA Member', 'event-management-system' ), $meta['mtaa_member'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Other Industry Codes', 'event-management-system' ), $meta['other_codes'] );
+						$this->render_profile_field( __( 'TGA Number', 'event-management-system' ), $meta['tga_number'] );
+						?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Products & Scope', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php
+						$this->render_profile_field( __( 'Products/Services', 'event-management-system' ), $meta['products'] );
+						$this->render_profile_field( __( 'ARTG Listings', 'event-management-system' ), $meta['artg_listings'] );
+						$sched_label = isset( EMS_Sponsor_Meta::SCHEDULING_CLASSES[ $meta['scheduling_class'] ] ) ? EMS_Sponsor_Meta::SCHEDULING_CLASSES[ $meta['scheduling_class'] ] : $meta['scheduling_class'];
+						$this->render_profile_field( __( 'Scheduling Class', 'event-management-system' ), $sched_label );
+						$device_label = isset( EMS_Sponsor_Meta::DEVICE_CLASSES[ $meta['device_class'] ] ) ? EMS_Sponsor_Meta::DEVICE_CLASSES[ $meta['device_class'] ] : $meta['device_class'];
+						$this->render_profile_field( __( 'Device Class', 'event-management-system' ), $device_label );
+						$this->render_profile_field( __( 'Non-ARTG Product', 'event-management-system' ), $meta['non_artg_product'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Off-label Use', 'event-management-system' ), $meta['off_label'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'TGA Safety Alert', 'event-management-system' ), $meta['tga_safety_alert'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Educational Relationship', 'event-management-system' ), $meta['educational_relation'] );
+						?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Legal, Insurance & Compliance', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php
+						$this->render_profile_field( __( 'Public Liability Insurance', 'event-management-system' ), $meta['public_liability_confirmed'] ? __( 'Confirmed', 'event-management-system' ) : __( 'Not confirmed', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Insurer', 'event-management-system' ), $meta['public_liability_insurer'] );
+						$this->render_profile_field( __( 'Policy Number', 'event-management-system' ), $meta['public_liability_policy'] );
+						$this->render_profile_field( __( 'Product Liability', 'event-management-system' ), $meta['product_liability_confirmed'] ? __( 'Confirmed', 'event-management-system' ) : __( 'Not confirmed', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Professional Indemnity', 'event-management-system' ), $meta['professional_indemnity'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Workers Compensation', 'event-management-system' ), $meta['workers_comp_confirmed'] ? __( 'Confirmed', 'event-management-system' ) : __( 'Not confirmed', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Code Compliance Agreed', 'event-management-system' ), $meta['code_compliance_agreed'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Adverse Findings', 'event-management-system' ), $meta['adverse_findings'] );
+						$this->render_profile_field( __( 'Legal Proceedings', 'event-management-system' ), $meta['legal_proceedings'] );
+						$this->render_profile_field( __( 'Transparency Obligations', 'event-management-system' ), $meta['transparency_obligations'] );
+						?>
+					</div>
+				</div>
+
+				<div class="ems-profile-section">
+					<h3><?php esc_html_e( 'Conflict of Interest', 'event-management-system' ); ?></h3>
+					<div class="ems-profile-grid">
+						<?php
+						$this->render_profile_field( __( 'QLD Health Policy Aware', 'event-management-system' ), $meta['qld_health_aware'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						$this->render_profile_field( __( 'Personal Relationships', 'event-management-system' ), $meta['personal_relationships'] );
+						$this->render_profile_field( __( 'Procurement Conflicts', 'event-management-system' ), $meta['procurement_conflicts'] );
+						$this->render_profile_field( __( 'Transfers of Value', 'event-management-system' ), $meta['transfers_of_value'] );
+						$this->render_profile_field( __( 'Preferential Treatment Agreed', 'event-management-system' ), $meta['preferential_treatment_agreed'] ? __( 'Yes', 'event-management-system' ) : __( 'No', 'event-management-system' ) );
+						?>
 					</div>
 				</div>
 			</div>
@@ -653,6 +732,163 @@ class EMS_Sponsor_Shortcodes {
 						</div>
 					</div>
 
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Industry Classification', 'event-management-system' ); ?></h3>
+						<div class="ems-form-group">
+							<label><?php esc_html_e( 'Industry Sectors', 'event-management-system' ); ?></label>
+							<div class="ems-checkbox-group">
+								<?php foreach ( EMS_Sponsor_Meta::INDUSTRY_SECTORS as $key => $label ) : ?>
+									<label class="ems-checkbox-label">
+										<input type="checkbox" name="industry_sectors[]" value="<?php echo esc_attr( $key ); ?>" <?php checked( in_array( $key, $industry_sectors, true ) ); ?> />
+										<?php echo esc_html( $label ); ?>
+									</label>
+								<?php endforeach; ?>
+							</div>
+						</div>
+						<div class="ems-form-row">
+							<div class="ems-form-group">
+								<label class="ems-checkbox-label">
+									<input type="checkbox" name="ma_member" value="1" <?php checked( $meta['ma_member'] ); ?> />
+									<?php esc_html_e( 'Medicines Australia Member', 'event-management-system' ); ?>
+								</label>
+							</div>
+							<div class="ems-form-group">
+								<label class="ems-checkbox-label">
+									<input type="checkbox" name="mtaa_member" value="1" <?php checked( $meta['mtaa_member'] ); ?> />
+									<?php esc_html_e( 'MTAA Member', 'event-management-system' ); ?>
+								</label>
+							</div>
+						</div>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'other_codes', __( 'Other Industry Codes', 'event-management-system' ), $meta['other_codes'], 'text' ); ?>
+							<?php $this->render_edit_field( 'tga_number', __( 'TGA Number', 'event-management-system' ), $meta['tga_number'], 'text' ); ?>
+						</div>
+					</div>
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Products & Scope', 'event-management-system' ); ?></h3>
+						<div class="ems-form-group">
+							<label for="ems-profile-products"><?php esc_html_e( 'Products/Services', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-products" name="products" rows="3" class="ems-form-control"><?php echo esc_textarea( $meta['products'] ); ?></textarea>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-artg_listings"><?php esc_html_e( 'ARTG Listings', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-artg_listings" name="artg_listings" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['artg_listings'] ); ?></textarea>
+						</div>
+						<div class="ems-form-row">
+							<div class="ems-form-group">
+								<label for="ems-profile-scheduling_class"><?php esc_html_e( 'Scheduling Class', 'event-management-system' ); ?></label>
+								<select id="ems-profile-scheduling_class" name="scheduling_class" class="ems-form-control">
+									<option value=""><?php esc_html_e( '-- Select --', 'event-management-system' ); ?></option>
+									<?php foreach ( EMS_Sponsor_Meta::SCHEDULING_CLASSES as $key => $label ) : ?>
+										<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $meta['scheduling_class'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div class="ems-form-group">
+								<label for="ems-profile-device_class"><?php esc_html_e( 'Device Class', 'event-management-system' ); ?></label>
+								<select id="ems-profile-device_class" name="device_class" class="ems-form-control">
+									<option value=""><?php esc_html_e( '-- Select --', 'event-management-system' ); ?></option>
+									<?php foreach ( EMS_Sponsor_Meta::DEVICE_CLASSES as $key => $label ) : ?>
+										<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $meta['device_class'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+						</div>
+						<div class="ems-form-group">
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="non_artg_product" value="1" <?php checked( $meta['non_artg_product'] ); ?> />
+								<?php esc_html_e( 'Non-ARTG product', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="off_label" value="1" <?php checked( $meta['off_label'] ); ?> />
+								<?php esc_html_e( 'Off-label use', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="tga_safety_alert" value="1" <?php checked( $meta['tga_safety_alert'] ); ?> />
+								<?php esc_html_e( 'TGA safety alert', 'event-management-system' ); ?>
+							</label>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-educational_relation"><?php esc_html_e( 'Educational Relationship', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-educational_relation" name="educational_relation" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['educational_relation'] ); ?></textarea>
+						</div>
+					</div>
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Legal, Insurance & Compliance', 'event-management-system' ); ?></h3>
+						<div class="ems-form-group">
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="public_liability_confirmed" value="1" <?php checked( $meta['public_liability_confirmed'] ); ?> />
+								<?php esc_html_e( 'Public liability insurance confirmed', 'event-management-system' ); ?>
+							</label>
+						</div>
+						<div class="ems-form-row">
+							<?php $this->render_edit_field( 'public_liability_insurer', __( 'Insurer', 'event-management-system' ), $meta['public_liability_insurer'], 'text' ); ?>
+							<?php $this->render_edit_field( 'public_liability_policy', __( 'Policy Number', 'event-management-system' ), $meta['public_liability_policy'], 'text' ); ?>
+						</div>
+						<div class="ems-form-group">
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="product_liability_confirmed" value="1" <?php checked( $meta['product_liability_confirmed'] ); ?> />
+								<?php esc_html_e( 'Product liability confirmed', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="professional_indemnity" value="1" <?php checked( $meta['professional_indemnity'] ); ?> />
+								<?php esc_html_e( 'Professional indemnity insurance', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="workers_comp_confirmed" value="1" <?php checked( $meta['workers_comp_confirmed'] ); ?> />
+								<?php esc_html_e( 'Workers compensation confirmed', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="code_compliance_agreed" value="1" <?php checked( $meta['code_compliance_agreed'] ); ?> />
+								<?php esc_html_e( 'Code compliance agreed', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="compliance_process" value="1" <?php checked( $meta['compliance_process'] ); ?> />
+								<?php esc_html_e( 'Documented compliance process', 'event-management-system' ); ?>
+							</label>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-adverse_findings"><?php esc_html_e( 'Adverse Findings', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-adverse_findings" name="adverse_findings" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['adverse_findings'] ); ?></textarea>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-legal_proceedings"><?php esc_html_e( 'Legal Proceedings', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-legal_proceedings" name="legal_proceedings" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['legal_proceedings'] ); ?></textarea>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-transparency_obligations"><?php esc_html_e( 'Transparency Obligations', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-transparency_obligations" name="transparency_obligations" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['transparency_obligations'] ); ?></textarea>
+						</div>
+					</div>
+
+					<div class="ems-profile-section">
+						<h3><?php esc_html_e( 'Conflict of Interest', 'event-management-system' ); ?></h3>
+						<div class="ems-form-group">
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="qld_health_aware" value="1" <?php checked( $meta['qld_health_aware'] ); ?> />
+								<?php esc_html_e( 'Aware of QLD Health gifting policy', 'event-management-system' ); ?>
+							</label>
+							<label class="ems-checkbox-label">
+								<input type="checkbox" name="preferential_treatment_agreed" value="1" <?php checked( $meta['preferential_treatment_agreed'] ); ?> />
+								<?php esc_html_e( 'Preferential treatment agreement', 'event-management-system' ); ?>
+							</label>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-personal_relationships"><?php esc_html_e( 'Personal Relationships', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-personal_relationships" name="personal_relationships" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['personal_relationships'] ); ?></textarea>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-procurement_conflicts"><?php esc_html_e( 'Procurement Conflicts', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-procurement_conflicts" name="procurement_conflicts" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['procurement_conflicts'] ); ?></textarea>
+						</div>
+						<div class="ems-form-group">
+							<label for="ems-profile-transfers_of_value"><?php esc_html_e( 'Transfers of Value', 'event-management-system' ); ?></label>
+							<textarea id="ems-profile-transfers_of_value" name="transfers_of_value" rows="2" class="ems-form-control"><?php echo esc_textarea( $meta['transfers_of_value'] ); ?></textarea>
+						</div>
+					</div>
+
 					<div class="ems-profile-actions">
 						<button type="submit" class="ems-button ems-button-primary"><?php esc_html_e( 'Save Changes', 'event-management-system' ); ?></button>
 						<button type="button" class="ems-button ems-profile-edit-toggle"><?php esc_html_e( 'Cancel', 'event-management-system' ); ?></button>
@@ -675,9 +911,49 @@ class EMS_Sponsor_Shortcodes {
 	 * @return void
 	 */
 	private function render_applications_tab( $sponsor_id, $eois ) {
+		$eoi_page_id  = get_option( 'ems_page_sponsor_eoi' );
+		$eoi_base_url = $eoi_page_id ? get_permalink( $eoi_page_id ) : '';
 		?>
 		<div class="ems-sponsor-applications-section">
-			<h2><?php esc_html_e( 'Sponsorship Applications', 'event-management-system' ); ?></h2>
+			<div class="ems-applications-header">
+				<h2><?php esc_html_e( 'Sponsorship Applications', 'event-management-system' ); ?></h2>
+				<?php if ( $eoi_base_url ) : ?>
+					<?php
+					// Get events with sponsorship enabled that this sponsor hasn't already applied to.
+					$existing_event_ids = array_map( function( $eoi ) { return absint( $eoi->event_id ); }, $eois );
+					$available_events = get_posts( array(
+						'post_type'      => 'ems_event',
+						'post_status'    => 'publish',
+						'posts_per_page' => -1,
+						'meta_query'     => array(
+							array(
+								'key'   => '_ems_sponsorship_enabled',
+								'value' => '1',
+							),
+						),
+					) );
+					$available_events = array_filter( $available_events, function( $event ) use ( $existing_event_ids ) {
+						return ! in_array( $event->ID, $existing_event_ids, true );
+					} );
+					?>
+					<?php if ( ! empty( $available_events ) ) : ?>
+						<div class="ems-new-eoi-dropdown">
+							<label for="ems-eoi-event-select"><?php esc_html_e( 'New Application:', 'event-management-system' ); ?></label>
+							<select id="ems-eoi-event-select">
+								<option value=""><?php esc_html_e( '-- Select an event --', 'event-management-system' ); ?></option>
+								<?php foreach ( $available_events as $event ) : ?>
+									<option value="<?php echo esc_attr( add_query_arg( 'event_id', $event->ID, $eoi_base_url ) ); ?>">
+										<?php echo esc_html( $event->post_title ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+							<button type="button" class="ems-button ems-button-primary ems-button-small" id="ems-eoi-go" disabled>
+								<?php esc_html_e( 'Express Interest', 'event-management-system' ); ?>
+							</button>
+						</div>
+					<?php endif; ?>
+				<?php endif; ?>
+			</div>
 
 			<?php if ( empty( $eois ) ) : ?>
 				<p class="ems-no-results"><?php esc_html_e( 'You have not submitted any sponsorship applications yet.', 'event-management-system' ); ?></p>
@@ -732,6 +1008,224 @@ class EMS_Sponsor_Shortcodes {
 				</div>
 			<?php endif; ?>
 		</div>
+		<?php
+	}
+
+	// =========================================================================
+	// Tab: My Sponsor Page
+	// =========================================================================
+
+	/**
+	 * Render the My Sponsor Page tab
+	 *
+	 * Provides a WYSIWYG editor for the sponsor's public page content
+	 * and logo/featured image management via the WordPress media uploader.
+	 *
+	 * @since 1.6.0
+	 * @param int      $sponsor_id Sponsor post ID.
+	 * @param WP_Post  $sponsor    Sponsor post object.
+	 * @return void
+	 */
+	private function render_page_tab( $sponsor_id, $sponsor ) {
+		// Enqueue WordPress media uploader scripts.
+		wp_enqueue_media();
+
+		$page_url      = get_permalink( $sponsor_id );
+		$thumbnail_id  = get_post_thumbnail_id( $sponsor_id );
+		$thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url( $thumbnail_id, 'medium' ) : '';
+		?>
+		<div class="ems-sponsor-page-section">
+			<div class="ems-page-header">
+				<h2><?php esc_html_e( 'My Sponsor Page', 'event-management-system' ); ?></h2>
+				<?php if ( 'publish' === $sponsor->post_status ) : ?>
+					<a href="<?php echo esc_url( $page_url ); ?>" class="ems-button ems-button-small" target="_blank">
+						<?php esc_html_e( 'View Public Page', 'event-management-system' ); ?>
+					</a>
+				<?php else : ?>
+					<span class="ems-badge ems-badge-warning"><?php esc_html_e( 'Pending Approval', 'event-management-system' ); ?></span>
+				<?php endif; ?>
+			</div>
+
+			<p class="ems-page-description">
+				<?php esc_html_e( 'Edit the content and logo displayed on your public sponsor page. Visitors will see your logo, description, website, and a list of events you sponsor.', 'event-management-system' ); ?>
+			</p>
+
+			<!-- Logo / Featured Image -->
+			<div class="ems-page-logo-section">
+				<h3><?php esc_html_e( 'Sponsor Logo', 'event-management-system' ); ?></h3>
+				<div class="ems-logo-preview" id="ems-logo-preview">
+					<?php if ( $thumbnail_url ) : ?>
+						<img src="<?php echo esc_url( $thumbnail_url ); ?>" alt="<?php echo esc_attr( $sponsor->post_title ); ?>" />
+					<?php else : ?>
+						<span class="ems-logo-placeholder"><?php esc_html_e( 'No logo uploaded', 'event-management-system' ); ?></span>
+					<?php endif; ?>
+				</div>
+				<div class="ems-logo-actions">
+					<button type="button" class="ems-button ems-button-small" id="ems-upload-logo">
+						<?php echo $thumbnail_url ? esc_html__( 'Change Logo', 'event-management-system' ) : esc_html__( 'Upload Logo', 'event-management-system' ); ?>
+					</button>
+					<?php if ( $thumbnail_url ) : ?>
+						<button type="button" class="ems-button ems-button-small ems-button-danger" id="ems-remove-logo">
+							<?php esc_html_e( 'Remove Logo', 'event-management-system' ); ?>
+						</button>
+					<?php endif; ?>
+				</div>
+				<input type="hidden" id="ems-logo-attachment-id" value="<?php echo esc_attr( $thumbnail_id ); ?>" />
+				<div class="ems-logo-save-status"></div>
+			</div>
+
+			<!-- Page Content WYSIWYG -->
+			<div class="ems-page-content-section">
+				<h3><?php esc_html_e( 'Page Description', 'event-management-system' ); ?></h3>
+				<form id="ems-sponsor-page-form" class="ems-form">
+					<input type="hidden" name="action" value="ems_save_sponsor_page" />
+					<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'ems_public_nonce' ) ); ?>" />
+					<input type="hidden" name="sponsor_id" value="<?php echo esc_attr( $sponsor_id ); ?>" />
+					<?php
+					wp_editor(
+						$sponsor->post_content,
+						'ems_sponsor_page_content',
+						array(
+							'textarea_name' => 'page_content',
+							'textarea_rows' => 12,
+							'media_buttons' => true,
+							'teeny'         => false,
+							'quicktags'     => true,
+							'tinymce'       => array(
+								'toolbar1' => 'formatselect,bold,italic,underline,bullist,numlist,blockquote,link,unlink,image,removeformat',
+								'toolbar2' => '',
+							),
+						)
+					);
+					?>
+					<div class="ems-page-content-actions">
+						<button type="submit" class="ems-button ems-button-primary"><?php esc_html_e( 'Save Page Content', 'event-management-system' ); ?></button>
+					</div>
+					<div class="ems-page-save-status"></div>
+				</form>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+		jQuery(document).ready(function($) {
+			// Logo upload via WP media uploader
+			$('#ems-upload-logo').on('click', function(e) {
+				e.preventDefault();
+				var frame = wp.media({
+					title: '<?php echo esc_js( __( 'Select Sponsor Logo', 'event-management-system' ) ); ?>',
+					button: { text: '<?php echo esc_js( __( 'Use as Logo', 'event-management-system' ) ); ?>' },
+					multiple: false,
+					library: { type: 'image' }
+				});
+
+				frame.on('select', function() {
+					var attachment = frame.state().get('selection').first().toJSON();
+					$('#ems-logo-attachment-id').val(attachment.id);
+					var imgUrl = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;
+					$('#ems-logo-preview').html('<img src="' + imgUrl + '" alt="" />');
+					$('#ems-remove-logo').show();
+					$('#ems-upload-logo').text('<?php echo esc_js( __( 'Change Logo', 'event-management-system' ) ); ?>');
+
+					// Save immediately via AJAX
+					var $status = $('.ems-logo-save-status');
+					$status.html('<div class="ems-notice ems-notice-info"><?php echo esc_js( __( 'Saving logo...', 'event-management-system' ) ); ?></div>');
+					$.ajax({
+						url: ems_public.ajax_url,
+						type: 'POST',
+						data: {
+							action: 'ems_save_sponsor_logo',
+							nonce: ems_public.nonce,
+							sponsor_id: <?php echo esc_js( $sponsor_id ); ?>,
+							attachment_id: attachment.id
+						},
+						success: function(response) {
+							$status.html(response.success
+								? '<div class="ems-notice ems-notice-success">' + response.data.message + '</div>'
+								: '<div class="ems-notice ems-notice-error">' + response.data + '</div>'
+							);
+						},
+						error: function() {
+							$status.html('<div class="ems-notice ems-notice-error"><?php echo esc_js( __( 'Failed to save logo.', 'event-management-system' ) ); ?></div>');
+						}
+					});
+				});
+
+				frame.open();
+			});
+
+			// Remove logo
+			$('#ems-remove-logo').on('click', function() {
+				$('#ems-logo-attachment-id').val('0');
+				$('#ems-logo-preview').html('<span class="ems-logo-placeholder"><?php echo esc_js( __( 'No logo uploaded', 'event-management-system' ) ); ?></span>');
+				$(this).hide();
+				$('#ems-upload-logo').text('<?php echo esc_js( __( 'Upload Logo', 'event-management-system' ) ); ?>');
+
+				var $status = $('.ems-logo-save-status');
+				$status.html('<div class="ems-notice ems-notice-info"><?php echo esc_js( __( 'Removing logo...', 'event-management-system' ) ); ?></div>');
+				$.ajax({
+					url: ems_public.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'ems_save_sponsor_logo',
+						nonce: ems_public.nonce,
+						sponsor_id: <?php echo esc_js( $sponsor_id ); ?>,
+						attachment_id: 0
+					},
+					success: function(response) {
+						$status.html(response.success
+							? '<div class="ems-notice ems-notice-success">' + response.data.message + '</div>'
+							: '<div class="ems-notice ems-notice-error">' + response.data + '</div>'
+						);
+					}
+				});
+			});
+
+			// Save page content
+			$('#ems-sponsor-page-form').on('submit', function(e) {
+				e.preventDefault();
+				var $form = $(this);
+				var $btn = $form.find('button[type="submit"]');
+				var $status = $form.find('.ems-page-save-status');
+
+				// Sync TinyMCE content to textarea
+				if (typeof tinymce !== 'undefined') {
+					var editor = tinymce.get('ems_sponsor_page_content');
+					if (editor) {
+						editor.save();
+					}
+				}
+
+				$btn.prop('disabled', true).addClass('loading');
+				$status.html('<div class="ems-notice ems-notice-info"><?php echo esc_js( __( 'Saving page content...', 'event-management-system' ) ); ?></div>');
+
+				$.ajax({
+					url: ems_public.ajax_url,
+					type: 'POST',
+					data: $form.serialize(),
+					success: function(response) {
+						$status.html(response.success
+							? '<div class="ems-notice ems-notice-success">' + response.data.message + '</div>'
+							: '<div class="ems-notice ems-notice-error">' + response.data + '</div>'
+						);
+						$btn.prop('disabled', false).removeClass('loading');
+					},
+					error: function() {
+						$status.html('<div class="ems-notice ems-notice-error"><?php echo esc_js( __( 'An error occurred. Please try again.', 'event-management-system' ) ); ?></div>');
+						$btn.prop('disabled', false).removeClass('loading');
+					}
+				});
+			});
+
+			// EOI event selector
+			$('#ems-eoi-event-select').on('change', function() {
+				$('#ems-eoi-go').prop('disabled', !$(this).val());
+			});
+			$('#ems-eoi-go').on('click', function() {
+				var url = $('#ems-eoi-event-select').val();
+				if (url) { window.location.href = url; }
+			});
+		});
+		</script>
 		<?php
 	}
 
@@ -1059,28 +1553,58 @@ class EMS_Sponsor_Shortcodes {
 				wp_send_json_error( __( 'Invalid sponsor ID', 'event-management-system' ) );
 			}
 
-			// Collect profile fields from POST
-			$profile_fields = array(
+			// Collect text profile fields from POST
+			$text_fields = array(
 				'legal_name', 'trading_name', 'abn', 'acn',
-				'registered_address', 'website_url', 'country', 'parent_company',
+				'website_url', 'country', 'parent_company',
 				'contact_name', 'contact_role', 'contact_email', 'contact_phone',
 				'signatory_name', 'signatory_title', 'signatory_email',
 				'marketing_contact_name', 'marketing_contact_email',
+				'other_codes', 'tga_number',
+				'public_liability_insurer', 'public_liability_policy',
+				'scheduling_class', 'device_class',
 			);
 
 			$data = array();
-			foreach ( $profile_fields as $field ) {
+			foreach ( $text_fields as $field ) {
 				if ( isset( $_POST[ $field ] ) ) {
 					$data[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
 				}
 			}
 
-			// Special handling for textarea fields
-			if ( isset( $_POST['registered_address'] ) ) {
-				$data['registered_address'] = sanitize_textarea_field( wp_unslash( $_POST['registered_address'] ) );
+			// Textarea fields
+			$textarea_fields = array(
+				'registered_address', 'products', 'artg_listings', 'educational_relation',
+				'adverse_findings', 'legal_proceedings', 'transparency_obligations',
+				'personal_relationships', 'procurement_conflicts', 'transfers_of_value',
+			);
+			foreach ( $textarea_fields as $field ) {
+				if ( isset( $_POST[ $field ] ) ) {
+					$data[ $field ] = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
+				}
 			}
 
-			// Special handling for email fields
+			// Checkbox / boolean fields (value is '1' if checked, absent if unchecked)
+			$boolean_fields = array(
+				'ma_member', 'mtaa_member',
+				'non_artg_product', 'off_label', 'tga_safety_alert',
+				'public_liability_confirmed', 'product_liability_confirmed',
+				'professional_indemnity', 'workers_comp_confirmed',
+				'code_compliance_agreed', 'compliance_process',
+				'qld_health_aware', 'preferential_treatment_agreed',
+			);
+			foreach ( $boolean_fields as $field ) {
+				$data[ $field ] = ! empty( $_POST[ $field ] ) ? '1' : '';
+			}
+
+			// Array fields (multi-select checkboxes)
+			if ( isset( $_POST['industry_sectors'] ) && is_array( $_POST['industry_sectors'] ) ) {
+				$data['industry_sectors'] = array_map( 'sanitize_text_field', wp_unslash( $_POST['industry_sectors'] ) );
+			} else {
+				$data['industry_sectors'] = array();
+			}
+
+			// Email field sanitization
 			$email_fields = array( 'contact_email', 'signatory_email', 'marketing_contact_email' );
 			foreach ( $email_fields as $email_field ) {
 				if ( isset( $data[ $email_field ] ) ) {
@@ -1088,7 +1612,7 @@ class EMS_Sponsor_Shortcodes {
 				}
 			}
 
-			// Special handling for URL fields
+			// URL field sanitization
 			if ( isset( $data['website_url'] ) ) {
 				$data['website_url'] = esc_url_raw( $data['website_url'] );
 			}
@@ -1151,6 +1675,72 @@ class EMS_Sponsor_Shortcodes {
 			);
 
 			wp_send_json_error( __( 'An error occurred while loading application details', 'event-management-system' ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for saving sponsor page content
+	 *
+	 * @since 1.6.0
+	 * @return void
+	 */
+	public function ajax_save_sponsor_page() {
+		check_ajax_referer( 'ems_public_nonce', 'nonce' );
+
+		try {
+			$sponsor_id = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
+			$content    = isset( $_POST['page_content'] ) ? wp_kses_post( wp_unslash( $_POST['page_content'] ) ) : '';
+
+			if ( ! $sponsor_id ) {
+				wp_send_json_error( __( 'Invalid sponsor ID', 'event-management-system' ) );
+			}
+
+			$result = $this->sponsor_portal->update_sponsor_page_content( $sponsor_id, $content );
+
+			if ( $result['success'] ) {
+				wp_send_json_success( $result );
+			} else {
+				wp_send_json_error( $result['message'] );
+			}
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in ajax_save_sponsor_page: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+			wp_send_json_error( __( 'An error occurred while saving page content', 'event-management-system' ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for saving sponsor logo
+	 *
+	 * @since 1.6.0
+	 * @return void
+	 */
+	public function ajax_save_sponsor_logo() {
+		check_ajax_referer( 'ems_public_nonce', 'nonce' );
+
+		try {
+			$sponsor_id    = isset( $_POST['sponsor_id'] ) ? absint( $_POST['sponsor_id'] ) : 0;
+			$attachment_id = isset( $_POST['attachment_id'] ) ? absint( $_POST['attachment_id'] ) : 0;
+
+			if ( ! $sponsor_id ) {
+				wp_send_json_error( __( 'Invalid sponsor ID', 'event-management-system' ) );
+			}
+
+			$result = $this->sponsor_portal->update_sponsor_logo( $sponsor_id, $attachment_id );
+
+			if ( $result['success'] ) {
+				wp_send_json_success( $result );
+			} else {
+				wp_send_json_error( $result['message'] );
+			}
+		} catch ( Exception $e ) {
+			$this->logger->error(
+				'Exception in ajax_save_sponsor_logo: ' . $e->getMessage(),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+			wp_send_json_error( __( 'An error occurred while saving the logo', 'event-management-system' ) );
 		}
 	}
 
