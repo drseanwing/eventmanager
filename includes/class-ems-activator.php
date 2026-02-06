@@ -543,6 +543,21 @@ class EMS_Activator {
 [ems_presenter_dashboard]',
 				'option'  => 'ems_page_submit_abstract',
 			),
+			'sponsor-portal' => array(
+				'title'   => __( 'Sponsor Portal', 'event-management-system' ),
+				'content' => '[ems_sponsor_portal]',
+				'option'  => 'ems_page_sponsor_portal',
+			),
+			'sponsor-onboarding' => array(
+				'title'   => __( 'Become a Sponsor', 'event-management-system' ),
+				'content' => '[ems_sponsor_onboarding]',
+				'option'  => 'ems_page_sponsor_onboarding',
+			),
+			'sponsor-eoi' => array(
+				'title'   => __( 'Sponsorship Expression of Interest', 'event-management-system' ),
+				'content' => '[ems_sponsor_eoi]',
+				'option'  => 'ems_page_sponsor_eoi',
+			),
 		);
 
 		foreach ( $pages as $slug => $page_data ) {
