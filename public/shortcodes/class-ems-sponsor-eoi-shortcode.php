@@ -78,6 +78,80 @@ class EMS_Sponsor_EOI_Shortcode {
 
 		// Handle POST submission.
 		add_action( 'template_redirect', array( $this, 'handle_submission' ) );
+
+		// Redirect non-sponsors to onboarding before the page renders.
+		add_action( 'template_redirect', array( $this, 'handle_auth_redirect' ) );
+	}
+
+	// =========================================================================
+	// Authentication Redirect (Early Gate)
+	// =========================================================================
+
+	/**
+	 * Redirect non-authenticated or non-sponsor users away from the EOI page.
+	 *
+	 * Fires on template_redirect so headers can still be sent. Detects the
+	 * current page by checking if its content contains the [ems_sponsor_eoi]
+	 * shortcode.
+	 *
+	 * - Not logged in: redirect to login with return URL.
+	 * - Logged in but not a sponsor: redirect to sponsor onboarding.
+	 *
+	 * @since 1.6.0
+	 * @return void
+	 */
+	public function handle_auth_redirect() {
+		// Only act on singular pages (avoid archives, admin, etc.).
+		if ( ! is_singular() || is_admin() ) {
+			return;
+		}
+
+		// If this is a POST submission or a success redirect, do not interfere.
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only
+		if ( isset( $_GET['ems_eoi_submitted'] ) ) {
+			return;
+		}
+
+		$post = get_queried_object();
+		if ( ! $post || ! is_a( $post, 'WP_Post' ) ) {
+			return;
+		}
+
+		// Check if the current page contains the [ems_sponsor_eoi] shortcode.
+		if ( ! has_shortcode( $post->post_content, 'ems_sponsor_eoi' ) ) {
+			return;
+		}
+
+		$current_url = get_permalink( $post->ID );
+		// Preserve event_id query param if present.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['event_id'] ) ) {
+			$current_url = add_query_arg( 'event_id', absint( $_GET['event_id'] ), $current_url );
+		}
+
+		// Gate 1: Not logged in — redirect to login.
+		if ( ! is_user_logged_in() ) {
+			wp_safe_redirect( wp_login_url( $current_url ) );
+			exit;
+		}
+
+		// Gate 2: Logged in but does not have sponsor portal access — redirect to onboarding.
+		if ( ! current_user_can( 'access_ems_sponsor_portal' ) ) {
+			$onboarding_url = $this->get_onboarding_url();
+			wp_safe_redirect( $onboarding_url );
+			exit;
+		}
+
+		// Gate 3: Has capability but no sponsor profile — redirect to onboarding.
+		$sponsor_id = $this->get_current_sponsor_id();
+		if ( ! $sponsor_id ) {
+			$onboarding_url = $this->get_onboarding_url();
+			wp_safe_redirect( $onboarding_url );
+			exit;
+		}
 	}
 
 	// =========================================================================
