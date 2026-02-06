@@ -97,6 +97,7 @@ class EMS_Core {
 		require_once EMS_PLUGIN_DIR . 'includes/utilities/class-ems-validator.php';
 		require_once EMS_PLUGIN_DIR . 'includes/utilities/class-ems-security.php';
 		require_once EMS_PLUGIN_DIR . 'includes/utilities/class-ems-user-helper.php';
+		require_once EMS_PLUGIN_DIR . 'includes/utilities/class-ems-user-switcher.php';
 		require_once EMS_PLUGIN_DIR . 'includes/utilities/class-ems-date-helper.php';
 
 		// Initialize logger
@@ -317,6 +318,10 @@ class EMS_Core {
 		// User helper - manages EMS user restrictions
 		$user_helper = new EMS_User_Helper();
 		$user_helper->init_hooks();
+
+		// User switcher - allows admins to impersonate EMS users for testing
+		$user_switcher = new EMS_User_Switcher();
+		$user_switcher->init_hooks();
 	}
 
 	/**

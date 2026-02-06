@@ -276,7 +276,8 @@ class EMS_Sponsor_Display_Shortcodes {
 					<div class="ems-event-sponsors__list">
 						<?php foreach ( $group['sponsors'] as $sponsor ) : ?>
 							<a href="<?php echo esc_url( get_permalink( $sponsor->ID ) ); ?>"
-							   class="ems-event-sponsors__item"
+							   class="ems-event-sponsors__item no-lightbox"
+							   data-no-lightbox="true"
 							   title="<?php echo esc_attr( $sponsor->post_title ); ?>">
 								<?php if ( $show_logos && has_post_thumbnail( $sponsor->ID ) ) : ?>
 									<div class="ems-event-sponsors__logo">
@@ -383,6 +384,8 @@ class EMS_Sponsor_Display_Shortcodes {
 								 count( $sponsors )
 							 ) ); ?>">
 							<a href="<?php echo esc_url( get_permalink( $sponsor->ID ) ); ?>"
+							   class="no-lightbox"
+							   data-no-lightbox="true"
 							   title="<?php echo esc_attr( $sponsor->post_title ); ?>">
 								<?php if ( has_post_thumbnail( $sponsor->ID ) ) : ?>
 									<?php echo get_the_post_thumbnail(
@@ -505,7 +508,8 @@ class EMS_Sponsor_Display_Shortcodes {
 		foreach ( $sponsors as $sponsor ) :
 			?>
 			<a href="<?php echo esc_url( get_permalink( $sponsor->ID ) ); ?>"
-			   class="ems-sponsor-gallery__item"
+			   class="ems-sponsor-gallery__item no-lightbox"
+			   data-no-lightbox="true"
 			   title="<?php echo esc_attr( $sponsor->post_title ); ?>">
 				<?php if ( has_post_thumbnail( $sponsor->ID ) ) : ?>
 					<div class="ems-sponsor-gallery__logo">
@@ -716,7 +720,8 @@ class EMS_Sponsor_Display_Shortcodes {
 				<div class="ems-sponsor-grid__items" style="--ems-grid-columns: <?php echo esc_attr( $columns ); ?>;">
 					<?php foreach ( $group['sponsors'] as $sponsor ) : ?>
 						<a href="<?php echo esc_url( get_permalink( $sponsor->ID ) ); ?>"
-						   class="ems-sponsor-grid__item"
+						   class="ems-sponsor-grid__item no-lightbox"
+						   data-no-lightbox="true"
 						   title="<?php echo esc_attr( $sponsor->post_title ); ?>">
 							<div class="ems-sponsor-grid__logo">
 								<?php if ( has_post_thumbnail( $sponsor->ID ) ) : ?>

@@ -958,6 +958,21 @@ class EMS_Admin {
 						'shortcode' => __( '(informational)', 'event-management-system' ),
 						'slug'      => 'submit-abstract',
 					),
+					'ems_page_sponsor_portal' => array(
+						'title'     => __( 'Sponsor Portal', 'event-management-system' ),
+						'shortcode' => '[ems_sponsor_portal]',
+						'slug'      => 'sponsor-portal',
+					),
+					'ems_page_sponsor_onboarding' => array(
+						'title'     => __( 'Become a Sponsor', 'event-management-system' ),
+						'shortcode' => '[ems_sponsor_onboarding]',
+						'slug'      => 'sponsor-onboarding',
+					),
+					'ems_page_sponsor_eoi' => array(
+						'title'     => __( 'Sponsorship EOI', 'event-management-system' ),
+						'shortcode' => '[ems_sponsor_eoi]',
+						'slug'      => 'sponsor-eoi',
+					),
 				);
 				?>
 				
@@ -1133,6 +1148,21 @@ class EMS_Admin {
 
 [ems_presenter_dashboard]',
 				'option'  => 'ems_page_submit_abstract',
+			),
+			'sponsor-portal' => array(
+				'title'   => __( 'Sponsor Portal', 'event-management-system' ),
+				'content' => '[ems_sponsor_portal]',
+				'option'  => 'ems_page_sponsor_portal',
+			),
+			'sponsor-onboarding' => array(
+				'title'   => __( 'Become a Sponsor', 'event-management-system' ),
+				'content' => '[ems_sponsor_onboarding]',
+				'option'  => 'ems_page_sponsor_onboarding',
+			),
+			'sponsor-eoi' => array(
+				'title'   => __( 'Sponsorship Expression of Interest', 'event-management-system' ),
+				'content' => '[ems_sponsor_eoi]',
+				'option'  => 'ems_page_sponsor_eoi',
 			),
 		);
 
