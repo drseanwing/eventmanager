@@ -633,9 +633,10 @@ class EMS_CPT_Sponsor {
 						$('#ems-linked-user-box').html(
 							'<div style="padding:8px;background:#f0f6fc;border:1px solid #00a32a;border-radius:4px;color:#00a32a;">' +
 							'<span class="dashicons dashicons-yes-alt" style="vertical-align:text-bottom;"></span> ' +
-							response.data.message + '</div>' +
+							'<span id="ems-linked-user-message"></span></div>' +
 							'<p class="description" style="margin-top:8px;"><?php echo esc_js( __( 'Reload this page to see the updated link.', 'event-management-system' ) ); ?></p>'
 						);
+						$('#ems-linked-user-message').text(response.data.message);
 					} else {
 						$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Create Account', 'event-management-system' ) ); ?>');
 						alert(response.data.message || '<?php echo esc_js( __( 'Error creating account.', 'event-management-system' ) ); ?>');
