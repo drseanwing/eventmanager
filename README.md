@@ -3,9 +3,9 @@
 A comprehensive WordPress plugin for managing events, conferences, sessions, registrations, abstract submissions, and sponsor collaboration.
 
 ## Version
-- **Plugin Version:** 1.5.0
+- **Plugin Version:** 1.6.0
 - **Requires WordPress:** 5.8+
-- **Tested up to:** 6.4
+- **Tested up to:** 6.7
 - **Requires PHP:** 7.4+
 - **License:** GPL v2 or later
 
