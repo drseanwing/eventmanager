@@ -235,7 +235,7 @@ $statuses = array(
 									<?php echo esc_html( $status_label ); ?>
 								</span>
 							</td>
-							<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $eoi->submitted_at ) ) ); ?></td>
+							<td><?php echo esc_html( EMS_Date_Helper::format( $eoi->submitted_at ) ); ?></td>
 							<td>
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=ems-eoi-detail&eoi_id=' . $eoi->id ) ); ?>" class="button button-small">
 									<?php esc_html_e( 'View', 'event-management-system' ); ?>

@@ -1100,7 +1100,7 @@ class EMS_Sponsor_Shortcodes {
 										<strong><?php echo esc_html( $event_title ); ?></strong>
 									</td>
 									<td data-label="<?php esc_attr_e( 'Submitted', 'event-management-system' ); ?>">
-										<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $eoi->submitted_at ) ) ); ?>
+										<?php echo esc_html( EMS_Date_Helper::format_date( $eoi->submitted_at ) ); ?>
 									</td>
 									<td data-label="<?php esc_attr_e( 'Status', 'event-management-system' ); ?>">
 										<span class="ems-badge <?php echo esc_attr( $status_data['class'] ); ?>">
@@ -1953,7 +1953,7 @@ class EMS_Sponsor_Shortcodes {
 						echo esc_html( sprintf(
 							/* translators: %s: date */
 							__( 'Reviewed on %s', 'event-management-system' ),
-							date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $eoi->reviewed_at ) )
+							EMS_Date_Helper::format( $eoi->reviewed_at )
 						) );
 						?>
 					</small>

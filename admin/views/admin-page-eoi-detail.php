@@ -119,13 +119,13 @@ $status_label = isset( $statuses[ $eoi->status ] ) ? $statuses[ $eoi->status ] :
 						</tr>
 						<tr>
 							<th><?php esc_html_e( 'Submitted', 'event-management-system' ); ?></th>
-							<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $eoi->submitted_at ) ) ); ?></td>
+							<td><?php echo esc_html( EMS_Date_Helper::format( $eoi->submitted_at ) ); ?></td>
 						</tr>
 						<?php if ( $eoi->reviewed_at ) : ?>
 							<tr>
 								<th><?php esc_html_e( 'Reviewed', 'event-management-system' ); ?></th>
 								<td>
-									<?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $eoi->reviewed_at ) ) ); ?>
+									<?php echo esc_html( EMS_Date_Helper::format( $eoi->reviewed_at ) ); ?>
 									<?php if ( $reviewer_name ) : ?>
 										<?php
 										printf(
@@ -362,7 +362,7 @@ $status_label = isset( $statuses[ $eoi->status ] ) ? $statuses[ $eoi->status ] :
 								printf(
 									/* translators: 1: Date, 2: Reviewer name */
 									esc_html__( 'Reviewed on %1$s by %2$s', 'event-management-system' ),
-									esc_html( date_i18n( get_option( 'date_format' ), strtotime( $eoi->reviewed_at ) ) ),
+									esc_html( EMS_Date_Helper::format_date( $eoi->reviewed_at ) ),
 									esc_html( $reviewer_name )
 								);
 								?>

@@ -355,7 +355,7 @@ class EMS_Admin {
 									<tr>
 										<td><?php echo esc_html( $reg->first_name . ' ' . $reg->last_name ); ?></td>
 										<td><?php echo esc_html( $reg->event_title ?: '—' ); ?></td>
-										<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $reg->registration_date ) ) ); ?></td>
+										<td><?php echo esc_html( EMS_Date_Helper::format_date( $reg->registration_date ) ); ?></td>
 										<td>
 											<span class="ems-status-badge ems-status-<?php echo esc_attr( $reg->status ); ?>">
 												<?php echo esc_html( ucfirst( $reg->status ) ); ?>
@@ -407,7 +407,7 @@ class EMS_Admin {
 							?>
 								<tr>
 									<td><strong><?php echo esc_html( $event->post_title ); ?></strong></td>
-									<td><?php echo $event_date ? esc_html( date_i18n( get_option( 'date_format' ), strtotime( $event_date ) ) ) : '—'; ?></td>
+									<td><?php echo $event_date ? esc_html( EMS_Date_Helper::format_date( $event_date ) ) : '—'; ?></td>
 									<td><?php echo esc_html( get_post_meta( $event->ID, 'event_location', true ) ?: '—' ); ?></td>
 									<td>
 										<?php echo esc_html( $reg_count ); ?>
@@ -609,7 +609,7 @@ class EMS_Admin {
 								<td><?php echo esc_html( $reg->event_title ?: '—' ); ?></td>
 								<td><?php echo esc_html( ucfirst( str_replace( '_', ' ', $reg->ticket_type ) ) ); ?></td>
 								<td>$<?php echo esc_html( number_format( $reg->amount_paid, 2 ) ); ?></td>
-								<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $reg->registration_date ) ) ); ?></td>
+								<td><?php echo esc_html( EMS_Date_Helper::format_date( $reg->registration_date ) ); ?></td>
 								<td>
 									<span class="ems-status-badge ems-status-<?php echo esc_attr( $reg->status ); ?>">
 										<?php echo esc_html( ucfirst( $reg->status ) ); ?>
@@ -1916,7 +1916,7 @@ class EMS_Admin {
 									<strong><?php echo $reviewer ? esc_html( $reviewer->display_name ) : esc_html__( 'Unknown Reviewer', 'event-management-system' ); ?></strong>
 									<br>
 									<span style="color: #666; font-size: 12px;">
-										<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $review['review_date'] ) ) ); ?>
+										<?php echo esc_html( EMS_Date_Helper::format_date( $review['review_date'] ) ); ?>
 									</span>
 									<br>
 									<strong><?php esc_html_e( 'Score:', 'event-management-system' ); ?></strong> <?php echo esc_html( $review['score'] ?? '—' ); ?>/10

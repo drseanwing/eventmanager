@@ -331,9 +331,9 @@ class EMS_Schedule_Shortcodes {
 								<span class="ems-event-date">
 									<span class="dashicons dashicons-calendar-alt"></span>
 									<?php 
-									echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $event_date ) ) );
+									echo esc_html( EMS_Date_Helper::format_date( $event_date ) );
 									if ( $event_end_date && $event_end_date !== $event_date ) {
-										echo ' - ' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $event_end_date ) ) );
+										echo ' - ' . esc_html( EMS_Date_Helper::format_date( $event_end_date ) );
 									}
 									?>
 								</span>
@@ -467,9 +467,9 @@ class EMS_Schedule_Shortcodes {
 						<span class="ems-meta-value">
 							<?php
 							echo esc_html(
-								date_i18n( get_option( 'date_format' ), strtotime( $session_data['start_datetime'] ) ) . ' ' .
-								date_i18n( get_option( 'time_format' ), strtotime( $session_data['start_datetime'] ) ) . ' - ' .
-								date_i18n( get_option( 'time_format' ), strtotime( $session_data['end_datetime'] ) )
+								EMS_Date_Helper::format_date( $session_data['start_datetime'] ) . ' ' .
+								EMS_Date_Helper::format_time( $session_data['start_datetime'] ) . ' - ' .
+								EMS_Date_Helper::format_time( $session_data['end_datetime'] )
 							);
 							?>
 						</span>

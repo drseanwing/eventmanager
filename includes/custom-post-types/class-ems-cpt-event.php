@@ -557,7 +557,7 @@ class EMS_CPT_Event {
 												<em><?php esc_html_e( 'None', 'event-management-system' ); ?></em>
 											<?php endif; ?>
 										</td>
-										<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $link['linked_date'] ) ) ); ?></td>
+										<td><?php echo esc_html( EMS_Date_Helper::format_date( $link['linked_date'] ) ); ?></td>
 										<td>
 											<button type="button"
 												class="button button-small ems-unlink-sponsor-btn"
