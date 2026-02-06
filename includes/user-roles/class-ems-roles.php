@@ -34,7 +34,7 @@ class EMS_Roles {
 	 *
 	 * @var string
 	 */
-	const CAPS_VERSION = '1.3.1';
+	const CAPS_VERSION = '1.7.0';
 
 	/**
 	 * Constructor.
@@ -198,25 +198,30 @@ class EMS_Roles {
 	 */
 	private function create_presenter_role() {
 		remove_role( 'ems_presenter' );
-		
+
 		add_role(
 			'ems_presenter',
 			__( 'Presenter', 'event-management-system' ),
 			array(
-				'read'                    => true,
-				'upload_files'            => true,
-				'read_ems_event'          => true,
-				'read_ems_events'         => true,
-				'edit_ems_abstract'       => true,
-				'read_ems_abstract'       => true,
-				'delete_ems_abstract'     => true,
-				'edit_ems_abstracts'      => false,
-				'publish_ems_abstracts'   => false,
-				'submit_ems_abstract'     => true,
-				'edit_own_ems_abstract'   => true,
-				'delete_own_ems_abstract' => true,
-				'upload_ems_files'        => true,
-				'view_own_ems_sessions'   => true,
+				'read'                          => true,
+				'upload_files'                  => true,
+				'read_ems_event'                => true,
+				'read_ems_events'               => true,
+				'edit_ems_abstract'             => true,
+				'read_ems_abstract'             => true,
+				'delete_ems_abstract'           => true,
+				'edit_ems_abstracts'            => false,
+				'publish_ems_abstracts'         => false,
+				'submit_ems_abstract'           => true,
+				'edit_own_ems_abstract'         => true,
+				'delete_own_ems_abstract'       => true,
+				'upload_ems_files'              => true,
+				'view_own_ems_sessions'         => true,
+				'access_ems_presenter_portal'   => true,
+				'upload_ems_presenter_files'    => true,
+				'download_ems_presenter_files'  => true,
+				'view_ems_draft_schedule'       => true,
+				'manage_ems_presenter_profile'  => true,
 			)
 		);
 	}
@@ -378,6 +383,11 @@ class EMS_Roles {
 			'submit_ems_abstract',
 			'upload_ems_files',
 			'access_ems_sponsor_portal',
+			'access_ems_presenter_portal',
+			'upload_ems_presenter_files',
+			'download_ems_presenter_files',
+			'view_ems_draft_schedule',
+			'manage_ems_presenter_profile',
 		);
 	}
 
