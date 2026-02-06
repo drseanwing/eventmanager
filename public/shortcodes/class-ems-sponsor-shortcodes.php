@@ -101,15 +101,35 @@ class EMS_Sponsor_Shortcodes {
 				   '</div>';
 		}
 
-		// Check if user has sponsor capability
-		if ( ! current_user_can( 'access_ems_sponsor_portal' ) ) {
+		$is_admin = current_user_can( 'manage_options' );
+
+		// Check if user has sponsor capability (admins always allowed).
+		if ( ! $is_admin && ! current_user_can( 'access_ems_sponsor_portal' ) ) {
 			return '<div class="ems-notice ems-notice-error">' .
 				   __( 'You do not have access to the sponsor portal.', 'event-management-system' ) .
 				   '</div>';
 		}
 
-		// Get sponsor ID for current user
-		$sponsor_id = $this->sponsor_portal->get_user_sponsor_id( get_current_user_id() );
+		// Admin sponsor picker: accept ?sponsor_id= query param.
+		$sponsor_id = 0;
+		if ( $is_admin ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only
+			$requested = isset( $_GET['sponsor_id'] ) ? absint( $_GET['sponsor_id'] ) : 0;
+			if ( $requested ) {
+				$requested_post = get_post( $requested );
+				if ( $requested_post && 'ems_sponsor' === $requested_post->post_type ) {
+					$sponsor_id = $requested;
+				}
+			}
+
+			if ( ! $sponsor_id ) {
+				// Show sponsor picker for admins.
+				return $this->render_admin_sponsor_picker();
+			}
+		} else {
+			$sponsor_id = $this->sponsor_portal->get_user_sponsor_id( get_current_user_id() );
+		}
+
 		if ( ! $sponsor_id ) {
 			return '<div class="ems-notice ems-notice-error">' .
 				   __( 'No sponsor profile associated with your account. Please contact the administrator.', 'event-management-system' ) .
@@ -137,6 +157,13 @@ class EMS_Sponsor_Shortcodes {
 		<div class="ems-sponsor-portal">
 			<!-- Portal Header -->
 			<div class="ems-sponsor-header">
+				<?php if ( $is_admin ) : ?>
+					<p style="margin-bottom: 8px;">
+						<a href="<?php echo esc_url( remove_query_arg( 'sponsor_id' ) ); ?>" style="text-decoration: none; font-size: 13px;">&larr; <?php esc_html_e( 'All Sponsors', 'event-management-system' ); ?></a>
+						&nbsp;|&nbsp;
+						<a href="<?php echo esc_url( get_edit_post_link( $sponsor_id ) ); ?>" style="text-decoration: none; font-size: 13px;"><?php esc_html_e( 'Edit in Admin', 'event-management-system' ); ?></a>
+					</p>
+				<?php endif; ?>
 				<h1><?php echo esc_html( sprintf( __( 'Welcome, %s', 'event-management-system' ), $sponsor->post_title ) ); ?></h1>
 				<p class="ems-sponsor-description"><?php esc_html_e( 'Manage your event sponsorships, organisation profile, and applications.', 'event-management-system' ); ?></p>
 			</div>
@@ -387,6 +414,98 @@ class EMS_Sponsor_Shortcodes {
 	 * @param array  $statistics Sponsor statistics.
 	 * @return void
 	 */
+	/**
+	 * Render admin sponsor picker when no sponsor_id is selected.
+	 *
+	 * @since 1.6.0
+	 * @return string HTML for the sponsor picker.
+	 */
+	private function render_admin_sponsor_picker() {
+		$sponsors = get_posts( array(
+			'post_type'      => 'ems_sponsor',
+			'post_status'    => array( 'publish', 'draft', 'pending' ),
+			'posts_per_page' => -1,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		) );
+
+		$current_url = remove_query_arg( 'sponsor_id' );
+
+		ob_start();
+		?>
+		<div class="ems-sponsor-portal">
+			<div class="ems-sponsor-header">
+				<h1><?php esc_html_e( 'Sponsor Portal — Admin View', 'event-management-system' ); ?></h1>
+				<p class="ems-sponsor-description"><?php esc_html_e( 'Select a sponsor to view their dashboard.', 'event-management-system' ); ?></p>
+			</div>
+
+			<?php if ( empty( $sponsors ) ) : ?>
+				<div class="ems-notice ems-notice-warning">
+					<?php esc_html_e( 'No sponsors have been created yet.', 'event-management-system' ); ?>
+				</div>
+			<?php else : ?>
+				<div class="ems-admin-sponsor-picker" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+					<?php foreach ( $sponsors as $sp ) :
+						$linked_user_id = get_post_meta( $sp->ID, '_ems_sponsor_user_id', true );
+						$linked_user    = $linked_user_id ? get_user_by( 'ID', $linked_user_id ) : null;
+						$linked_events  = get_post_meta( $sp->ID, '_ems_linked_events', true );
+						$event_count    = is_array( $linked_events ) ? count( $linked_events ) : 0;
+						$view_url       = add_query_arg( 'sponsor_id', $sp->ID, $current_url );
+						?>
+						<a href="<?php echo esc_url( $view_url ); ?>" class="ems-sponsor-picker-card" style="
+							display: block;
+							padding: 16px;
+							border: 1px solid #c3c4c7;
+							border-radius: 6px;
+							text-decoration: none;
+							color: inherit;
+							background: #fff;
+							transition: border-color 0.2s, box-shadow 0.2s;
+						" onmouseover="this.style.borderColor='#2271b1';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'" onmouseout="this.style.borderColor='#c3c4c7';this.style.boxShadow='none'">
+							<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+								<?php if ( has_post_thumbnail( $sp->ID ) ) : ?>
+									<div style="width: 48px; height: 48px; flex-shrink: 0;">
+										<?php echo get_the_post_thumbnail( $sp->ID, 'thumbnail', array(
+											'style' => 'width: 48px; height: 48px; object-fit: contain; border-radius: 4px;',
+										) ); ?>
+									</div>
+								<?php endif; ?>
+								<div>
+									<strong style="font-size: 15px;"><?php echo esc_html( $sp->post_title ); ?></strong>
+									<span style="display: block; font-size: 12px; color: #646970; text-transform: capitalize;">
+										<?php echo esc_html( $sp->post_status ); ?>
+									</span>
+								</div>
+							</div>
+							<div style="font-size: 12px; color: #646970;">
+								<?php
+								$details = array();
+								$details[] = sprintf(
+									/* translators: %d: number of events */
+									_n( '%d event', '%d events', $event_count, 'event-management-system' ),
+									$event_count
+								);
+								if ( $linked_user ) {
+									$details[] = sprintf(
+										/* translators: %s: user email */
+										__( 'User: %s', 'event-management-system' ),
+										$linked_user->user_email
+									);
+								} else {
+									$details[] = '<span style="color: #d63638;">' . esc_html__( 'No linked user', 'event-management-system' ) . '</span>';
+								}
+								echo implode( ' &middot; ', $details );
+								?>
+							</div>
+						</a>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
 	private function render_dashboard_tab( $sponsor_id, $sponsor, $events, $statistics ) {
 		?>
 		<!-- Statistics Dashboard -->

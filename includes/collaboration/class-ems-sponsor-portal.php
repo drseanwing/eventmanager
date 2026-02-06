@@ -806,22 +806,24 @@ class EMS_Sponsor_Portal {
 	 * @return int|false Sponsor post ID or false if not found
 	 */
 	public function get_user_sponsor_id( $user_id ) {
-		// Check custom user meta first
+		// Check custom user meta link (set by onboarding or admin linking).
 		$sponsor_id = get_user_meta( $user_id, '_ems_sponsor_id', true );
 		if ( $sponsor_id ) {
 			return absint( $sponsor_id );
 		}
 
-		// Check if user is author of any sponsor posts
-		$sponsors = get_posts( array(
-			'post_type'      => 'ems_sponsor',
-			'author'         => $user_id,
-			'posts_per_page' => 1,
-			'fields'         => 'ids',
-		) );
+		// For non-admin users, also check post authorship as fallback.
+		if ( ! user_can( $user_id, 'manage_options' ) ) {
+			$sponsors = get_posts( array(
+				'post_type'      => 'ems_sponsor',
+				'author'         => $user_id,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+			) );
 
-		if ( ! empty( $sponsors ) ) {
-			return $sponsors[0];
+			if ( ! empty( $sponsors ) ) {
+				return $sponsors[0];
+			}
 		}
 
 		return false;
