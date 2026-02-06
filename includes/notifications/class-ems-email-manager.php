@@ -183,8 +183,8 @@ class EMS_Email_Manager {
 		
 		try {
 			// Get events starting in next 24-48 hours that haven't had reminders sent
-			$tomorrow_start = date( 'Y-m-d H:i:s', strtotime( '+24 hours' ) );
-			$tomorrow_end   = date( 'Y-m-d H:i:s', strtotime( '+48 hours' ) );
+			$tomorrow_start = wp_date( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+			$tomorrow_end   = wp_date( 'Y-m-d H:i:s', time() + ( 2 * DAY_IN_SECONDS ) );
 			
 			$events = get_posts( array(
 				'post_type'      => 'ems_event',
@@ -271,7 +271,7 @@ class EMS_Email_Manager {
 		try {
 			// Get sessions starting in next 24 hours that haven't had reminders sent
 			$now          = current_time( 'mysql' );
-			$tomorrow     = date( 'Y-m-d H:i:s', strtotime( '+24 hours' ) );
+			$tomorrow     = wp_date( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
 			
 			$sessions = get_posts( array(
 				'post_type'      => 'ems_session',
@@ -633,7 +633,7 @@ class EMS_Email_Manager {
 				__( 'Ticket Type', 'event-management-system' ),
 				esc_html( ucfirst( $registration->ticket_type ) ),
 				__( 'Original Registration Date', 'event-management-system' ),
-				esc_html( date_i18n( get_option( 'date_format' ), strtotime( $registration->registration_date ) ) ),
+				esc_html( EMS_Date_Helper::format_date( $registration->registration_date ) ),
 				$reason_text,
 				esc_url( admin_url( 'admin.php?page=ems-registrations&event_id=' . $registration->event_id ) ),
 				__( 'View all registrations for this event', 'event-management-system' )
@@ -1168,7 +1168,7 @@ class EMS_Email_Manager {
 			<div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong>Title:</strong> <?php echo esc_html( $data['abstract_title'] ); ?></p>
 				<p style="margin: 5px 0;"><strong>Type:</strong> <?php echo esc_html( $data['abstract_type'] ); ?></p>
-				<p style="margin: 5px 0;"><strong>Submitted:</strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $data['submission_date'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>Submitted:</strong> <?php echo esc_html( EMS_Date_Helper::format_date( $data['submission_date'] ) ); ?></p>
 			</div>
 			
 			<p>Your abstract is now under review. You will be notified via email when the review process is complete.</p>
@@ -1257,7 +1257,7 @@ class EMS_Email_Manager {
 			<div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong>Title:</strong> <?php echo esc_html( $data['abstract_title'] ); ?></p>
 				<p style="margin: 5px 0;"><strong>Average Score:</strong> <?php echo esc_html( number_format( $data['average_score'], 1 ) ); ?>/10</p>
-				<p style="margin: 5px 0;"><strong>Approved:</strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $data['approval_date'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>Approved:</strong> <?php echo esc_html( EMS_Date_Helper::format_date( $data['approval_date'] ) ); ?></p>
 			</div>
 			
 			<p><strong>Next Steps:</strong></p>
@@ -1657,8 +1657,8 @@ class EMS_Email_Manager {
 			<div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong>Session:</strong> <?php echo esc_html( $data['session_title'] ); ?></p>
 				<p style="margin: 5px 0;"><strong>Event:</strong> <?php echo esc_html( $data['event_title'] ); ?></p>
-				<p style="margin: 5px 0;"><strong>When:</strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $data['start_datetime'] ) ) ); ?></p>
-				<p style="margin: 5px 0;"><strong>Duration:</strong> <?php echo esc_html( date( 'g:i A', strtotime( $data['start_datetime'] ) ) . ' - ' . date( 'g:i A', strtotime( $data['end_datetime'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>When:</strong> <?php echo esc_html( EMS_Date_Helper::format( $data['start_datetime'] ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>Duration:</strong> <?php echo esc_html( EMS_Date_Helper::format( $data['start_datetime'], 'g:i A' ) . ' - ' . EMS_Date_Helper::format( $data['end_datetime'], 'g:i A' ) ); ?></p>
 				<p style="margin: 5px 0;"><strong>Location:</strong> <?php echo esc_html( $data['location'] ); ?></p>
 			</div>
 			
@@ -1690,8 +1690,8 @@ class EMS_Email_Manager {
 			
 			<div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong>Session:</strong> <?php echo esc_html( $data['session_title'] ); ?></p>
-				<p style="margin: 5px 0;"><strong>When:</strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $data['start_datetime'] ) ) ); ?></p>
-				<p style="margin: 5px 0;"><strong>Time:</strong> <?php echo esc_html( date( 'g:i A', strtotime( $data['start_datetime'] ) ) . ' - ' . date( 'g:i A', strtotime( $data['end_datetime'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>When:</strong> <?php echo esc_html( EMS_Date_Helper::format( $data['start_datetime'] ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>Time:</strong> <?php echo esc_html( EMS_Date_Helper::format( $data['start_datetime'], 'g:i A' ) . ' - ' . EMS_Date_Helper::format( $data['end_datetime'], 'g:i A' ) ); ?></p>
 				<p style="margin: 5px 0;"><strong>Location:</strong> <?php echo esc_html( $data['location'] ); ?></p>
 			</div>
 			
@@ -1730,7 +1730,7 @@ class EMS_Email_Manager {
 
 			<div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong>Event:</strong> <?php echo esc_html( $data['event_title'] ); ?></p>
-				<p style="margin: 5px 0;"><strong>Date:</strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $data['event_date'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong>Date:</strong> <?php echo esc_html( EMS_Date_Helper::format( $data['event_date'] ) ); ?></p>
 				<p style="margin: 5px 0;"><strong>Location:</strong> <?php echo esc_html( $data['location'] ); ?></p>
 			</div>
 
@@ -2287,7 +2287,7 @@ class EMS_Email_Manager {
 			<div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
 				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Event:', 'event-management-system' ); ?></strong> <?php echo esc_html( $data['event_name'] ); ?></p>
 				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Preferred Level:', 'event-management-system' ); ?></strong> <?php echo esc_html( ucfirst( str_replace( '_', ' ', $data['preferred_level'] ) ) ); ?></p>
-				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $data['submitted_date'] ) ) ); ?></p>
+				<p style="margin: 5px 0;"><strong><?php echo esc_html__( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( EMS_Date_Helper::format_date( $data['submitted_date'] ) ); ?></p>
 			</div>
 
 			<p><strong><?php echo esc_html__( 'What Happens Next:', 'event-management-system' ); ?></strong></p>

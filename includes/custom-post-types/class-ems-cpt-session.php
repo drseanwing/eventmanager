@@ -391,8 +391,8 @@ class EMS_CPT_Session {
 				$start = get_post_meta( $post_id, 'start_datetime', true );
 				$end   = get_post_meta( $post_id, 'end_datetime', true );
 				if ( $start && $end ) {
-					echo esc_html( date_i18n( 'M j, Y', strtotime( $start ) ) ) . '<br>';
-					echo '<small>' . esc_html( date_i18n( 'g:i A', strtotime( $start ) ) ) . ' - ' . esc_html( date_i18n( 'g:i A', strtotime( $end ) ) ) . '</small>';
+					echo esc_html( EMS_Date_Helper::format( $start, 'M j, Y' ) ) . '<br>';
+					echo '<small>' . esc_html( EMS_Date_Helper::format( $start, 'g:i A' ) ) . ' - ' . esc_html( EMS_Date_Helper::format( $end, 'g:i A' ) ) . '</small>';
 				}
 				break;
 

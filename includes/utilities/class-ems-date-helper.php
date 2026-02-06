@@ -179,6 +179,17 @@ class EMS_Date_Helper {
 	}
 
 	/**
+	 * Format datetime for time-only display
+	 *
+	 * @since 1.6.0
+	 * @param string $datetime_string The datetime string.
+	 * @return string Formatted time string.
+	 */
+	public static function format_time( $datetime_string ) {
+		return self::format( $datetime_string, get_option( 'time_format' ) );
+	}
+
+	/**
 	 * Get time until/since a datetime
 	 *
 	 * @since 1.3.0

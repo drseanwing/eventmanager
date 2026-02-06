@@ -147,7 +147,7 @@ if ( isset( $_POST['submit_review'] ) && isset( $_POST['ems_review_nonce'] ) ) {
                                 <h3 style="margin: 0 0 10px 0;"><?php _e( 'Your Review', 'event-management-system' ); ?></h3>
                                 <p style="margin: 5px 0;"><strong><?php _e( 'Score:', 'event-management-system' ); ?></strong> <?php echo esc_html( $assignment['score'] ); ?>/10</p>
                                 <p style="margin: 5px 0;"><strong><?php _e( 'Recommendation:', 'event-management-system' ); ?></strong> <?php echo esc_html( ucfirst( $assignment['recommendation'] ) ); ?></p>
-                                <p style="margin: 5px 0;"><strong><?php _e( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $assignment['review_date'] ) ) ); ?></p>
+                                <p style="margin: 5px 0;"><strong><?php _e( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( EMS_Date_Helper::format( $assignment['review_date'] ) ); ?></p>
                             </div>
                         <?php else : ?>
                             <!-- Review Form -->

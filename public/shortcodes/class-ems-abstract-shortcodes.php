@@ -253,7 +253,7 @@ class EMS_Abstract_Shortcodes {
                             <div class="ems-abstract-meta">
                                 <p><strong><?php _e( 'Event:', 'event-management-system' ); ?></strong> <?php echo esc_html( $abstract['event_title'] ); ?></p>
                                 <p><strong><?php _e( 'Type:', 'event-management-system' ); ?></strong> <?php echo esc_html( ucfirst( $abstract['abstract_type'] ) ); ?></p>
-                                <p><strong><?php _e( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $abstract['submission_date'] ) ) ); ?></p>
+                                <p><strong><?php _e( 'Submitted:', 'event-management-system' ); ?></strong> <?php echo esc_html( EMS_Date_Helper::format_date( $abstract['submission_date'] ) ); ?></p>
                             </div>
 
                             <div class="ems-abstract-actions">

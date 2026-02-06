@@ -369,7 +369,7 @@ class EMS_Invoice_Gateway extends EMS_Payment_Gateway {
 				<div class="invoice-details">
 					<strong><?php echo esc_html( __( 'Event:', 'event-management-system' ) ); ?></strong> <?php echo esc_html( $event->post_title ); ?><br>
 					<?php if ( $event_date ) : ?>
-						<strong><?php echo esc_html( __( 'Date:', 'event-management-system' ) ); ?></strong> <?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $event_date ) ) ); ?><br>
+						<strong><?php echo esc_html( __( 'Date:', 'event-management-system' ) ); ?></strong> <?php echo esc_html( EMS_Date_Helper::format_date( $event_date ) ); ?><br>
 					<?php endif; ?>
 					<strong><?php echo esc_html( __( 'Registration ID:', 'event-management-system' ) ); ?></strong> <?php echo esc_html( $registration->id ); ?>
 				</div>

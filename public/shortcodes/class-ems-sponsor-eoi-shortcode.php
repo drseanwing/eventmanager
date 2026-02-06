@@ -393,7 +393,7 @@ class EMS_Sponsor_EOI_Shortcode {
 		$html .= sprintf(
 			/* translators: 1: formatted date, 2: status label */
 			esc_html__( 'You submitted an expression of interest on %1$s. Current status: %2$s.', 'event-management-system' ),
-			esc_html( date_i18n( get_option( 'date_format' ), strtotime( $eoi->submitted_at ) ) ),
+			esc_html( EMS_Date_Helper::format_date( $eoi->submitted_at ) ),
 			'<strong>' . esc_html( $status_label ) . '</strong>'
 		);
 

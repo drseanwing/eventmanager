@@ -215,9 +215,9 @@ class EMS_Public {
 							<div>
 								<strong><?php esc_html_e( 'Date:', 'event-management-system' ); ?></strong><br>
 								<?php 
-								echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $start_date ) ) );
+								echo esc_html( EMS_Date_Helper::format_date( $start_date ) );
 								if ( $end_date && $end_date !== $start_date ) {
-									echo ' - ' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $end_date ) ) );
+									echo ' - ' . esc_html( EMS_Date_Helper::format_date( $end_date ) );
 								}
 								?>
 							</div>
@@ -243,7 +243,7 @@ class EMS_Public {
 						<?php if ( $reg_deadline ) : ?>
 							<div>
 								<strong><?php esc_html_e( 'Registration Deadline:', 'event-management-system' ); ?></strong><br>
-								<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $reg_deadline ) ) ); ?>
+								<?php echo esc_html( EMS_Date_Helper::format_date( $reg_deadline ) ); ?>
 							</div>
 						<?php endif; ?>
 					</div>
@@ -478,9 +478,9 @@ class EMS_Public {
 						<div class="ems-event-meta-top">
 							<?php if ( $start_date ) : ?>
 								<span class="ems-event-date">
-									<strong><?php echo esc_html( date_i18n( 'M j, Y', strtotime( $start_date ) ) ); ?></strong>
+									<strong><?php echo esc_html( EMS_Date_Helper::format( $start_date, 'M j, Y' ) ); ?></strong>
 									<?php if ( $end_date && $end_date !== $start_date ) : ?>
-										- <?php echo esc_html( date_i18n( 'M j, Y', strtotime( $end_date ) ) ); ?>
+										- <?php echo esc_html( EMS_Date_Helper::format( $end_date, 'M j, Y' ) ); ?>
 									<?php endif; ?>
 								</span>
 							<?php endif; ?>
@@ -909,7 +909,7 @@ class EMS_Public {
 					<p><?php esc_html_e( 'You have already registered for this event.', 'event-management-system' ); ?></p>
 					<p>
 						<strong><?php esc_html_e( 'Registration Date:', 'event-management-system' ); ?></strong> 
-						<?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $existing_registration->registration_date ) ) ); ?>
+						<?php echo esc_html( EMS_Date_Helper::format( $existing_registration->registration_date ) ); ?>
 					</p>
 					<p>
 						<strong><?php esc_html_e( 'Status:', 'event-management-system' ); ?></strong> 

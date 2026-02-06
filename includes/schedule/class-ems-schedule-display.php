@@ -241,7 +241,7 @@ class EMS_Schedule_Display {
 			<?php foreach ( $by_date as $date => $date_sessions ) : ?>
 				<div class="ems-timeline-day">
 					<h3 class="ems-timeline-date">
-						<?php echo esc_html( date_i18n( 'l, F j, Y', strtotime( $date ) ) ); ?>
+						<?php echo esc_html( EMS_Date_Helper::format( $date, 'l, F j, Y' ) ); ?>
 					</h3>
 					
 					<div class="ems-timeline-sessions">
@@ -252,11 +252,11 @@ class EMS_Schedule_Display {
 						});
 
 						foreach ( $date_sessions as $session ) :
-							$start_time = date( 'H:i', strtotime( $session['start_datetime'] ) );
+							$start_time = EMS_Date_Helper::format( $session['start_datetime'], 'H:i' );
 							?>
 							<div class="ems-timeline-slot" data-time="<?php echo esc_attr( $start_time ); ?>">
 								<div class="ems-timeline-time">
-									<?php echo esc_html( date_i18n( get_option( 'time_format' ), strtotime( $session['start_datetime'] ) ) ); ?>
+									<?php echo esc_html( EMS_Date_Helper::format_time( $session['start_datetime'] ) ); ?>
 								</div>
 								<div class="ems-timeline-content">
 									<?php echo $this->render_session_card( $session, 'timeline' ); ?>
@@ -300,8 +300,8 @@ class EMS_Schedule_Display {
 					<span class="dashicons dashicons-clock"></span>
 					<?php
 					echo esc_html(
-						date_i18n( get_option( 'time_format' ), strtotime( $session['start_datetime'] ) ) . ' - ' .
-						date_i18n( get_option( 'time_format' ), strtotime( $session['end_datetime'] ) )
+						EMS_Date_Helper::format_time( $session['start_datetime'] ) . ' - ' .
+						EMS_Date_Helper::format_time( $session['end_datetime'] )
 					);
 					?>
 				</div>
@@ -443,7 +443,7 @@ class EMS_Schedule_Display {
 		foreach ( $sessions as $session ) {
 			switch ( $group_by ) {
 				case 'date':
-					$key = date( 'Y-m-d', strtotime( $session['start_datetime'] ) );
+					$key = EMS_Date_Helper::format( $session['start_datetime'], 'Y-m-d' );
 					break;
 				case 'track':
 					$key = ! empty( $session['track'] ) ? $session['track'] : __( 'No Track', 'event-management-system' );
@@ -481,7 +481,7 @@ class EMS_Schedule_Display {
 	private function format_group_title( $group_key, $group_by ) {
 		switch ( $group_by ) {
 			case 'date':
-				return date_i18n( 'l, F j, Y', strtotime( $group_key ) );
+				return EMS_Date_Helper::format( $group_key, 'l, F j, Y' );
 			case 'track':
 			case 'location':
 			default:
@@ -601,8 +601,8 @@ class EMS_Schedule_Display {
 				$ical .= "BEGIN:VEVENT\r\n";
 				$ical .= "UID:session-" . $session['id'] . "@" . parse_url( home_url(), PHP_URL_HOST ) . "\r\n";
 				$ical .= "DTSTAMP:" . gmdate( 'Ymd\THis\Z' ) . "\r\n";
-				$ical .= "DTSTART:" . gmdate( 'Ymd\THis\Z', strtotime( $session['start_datetime'] ) ) . "\r\n";
-				$ical .= "DTEND:" . gmdate( 'Ymd\THis\Z', strtotime( $session['end_datetime'] ) ) . "\r\n";
+				$ical .= "DTSTART:" . gmdate( 'Ymd\THis\Z', EMS_Date_Helper::to_timestamp( $session['start_datetime'] ) ) . "\r\n";
+				$ical .= "DTEND:" . gmdate( 'Ymd\THis\Z', EMS_Date_Helper::to_timestamp( $session['end_datetime'] ) ) . "\r\n";
 				$ical .= "SUMMARY:" . $this->ical_escape( $session['title'] ) . "\r\n";
 				
 				if ( ! empty( $session['description'] ) ) {
@@ -681,7 +681,7 @@ class EMS_Schedule_Display {
 								<h4><?php echo esc_html( $session['title'] ); ?></h4>
 								<div class="ems-session-details">
 									<span class="ems-session-time">
-										<?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $session['start_datetime'] ) ) ); ?>
+										<?php echo esc_html( EMS_Date_Helper::format( $session['start_datetime'] ) ); ?>
 									</span>
 									<span class="ems-session-location"><?php echo esc_html( $session['location'] ); ?></span>
 								</div>
@@ -757,8 +757,8 @@ class EMS_Schedule_Display {
 				$ical .= "BEGIN:VEVENT\r\n";
 				$ical .= "UID:session-" . $session['id'] . "-reg-" . $registration->id . "@" . parse_url( home_url(), PHP_URL_HOST ) . "\r\n";
 				$ical .= "DTSTAMP:" . gmdate( 'Ymd\THis\Z' ) . "\r\n";
-				$ical .= "DTSTART:" . gmdate( 'Ymd\THis\Z', strtotime( $session['start_datetime'] ) ) . "\r\n";
-				$ical .= "DTEND:" . gmdate( 'Ymd\THis\Z', strtotime( $session['end_datetime'] ) ) . "\r\n";
+				$ical .= "DTSTART:" . gmdate( 'Ymd\THis\Z', EMS_Date_Helper::to_timestamp( $session['start_datetime'] ) ) . "\r\n";
+				$ical .= "DTEND:" . gmdate( 'Ymd\THis\Z', EMS_Date_Helper::to_timestamp( $session['end_datetime'] ) ) . "\r\n";
 				$ical .= "SUMMARY:" . $this->ical_escape( $session['title'] ) . "\r\n";
 				
 				if ( ! empty( $session['description'] ) ) {
