@@ -64,6 +64,9 @@ class EMS_CPT_Sponsor {
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_meta_boxes' ), 10, 2 );
 
+		// AJAX: Create sponsor user account from admin.
+		add_action( 'wp_ajax_ems_create_sponsor_user_account', array( $this, 'ajax_create_sponsor_account' ) );
+
 		// Status change logging
 		add_action( 'transition_post_status', array( $this, 'log_status_change' ), 10, 3 );
 
@@ -150,6 +153,15 @@ class EMS_CPT_Sponsor {
 			self::POST_TYPE,
 			'normal',
 			'default'
+		);
+
+		add_meta_box(
+			'ems_sponsor_linked_user',
+			__( 'Linked User Account', 'event-management-system' ),
+			array( $this, 'render_linked_user_meta_box' ),
+			self::POST_TYPE,
+			'side',
+			'high'
 		);
 	}
 
@@ -500,6 +512,146 @@ class EMS_CPT_Sponsor {
 	}
 
 	/**
+	 * Render the Linked User Account meta box.
+	 *
+	 * Shows the currently linked user and allows linking/creating accounts.
+	 *
+	 * @since 1.6.0
+	 * @param WP_Post $post Current post object.
+	 */
+	public function render_linked_user_meta_box( $post ) {
+		$linked_user_id = absint( get_post_meta( $post->ID, '_ems_sponsor_user_id', true ) );
+		$linked_user    = $linked_user_id ? get_user_by( 'ID', $linked_user_id ) : null;
+
+		wp_nonce_field( 'ems_sponsor_user_link_nonce', 'ems_sponsor_user_link_nonce' );
+		?>
+		<div id="ems-linked-user-box">
+			<?php if ( $linked_user ) : ?>
+				<div class="ems-linked-user-info" style="margin-bottom: 12px; padding: 8px; background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 4px;">
+					<?php echo get_avatar( $linked_user->ID, 32, '', '', array( 'style' => 'float: left; margin-right: 8px; border-radius: 50%;' ) ); ?>
+					<strong><?php echo esc_html( $linked_user->display_name ); ?></strong><br>
+					<span style="color: #646970; font-size: 12px;">
+						<?php echo esc_html( $linked_user->user_email ); ?><br>
+						<?php echo esc_html( implode( ', ', $linked_user->roles ) ); ?>
+					</span>
+					<div style="clear: both;"></div>
+				</div>
+				<p>
+					<label for="ems_linked_user_id"><strong><?php esc_html_e( 'Change linked user:', 'event-management-system' ); ?></strong></label>
+				</p>
+			<?php else : ?>
+				<div style="margin-bottom: 12px; padding: 8px; background: #fcf0f1; border: 1px solid #d63638; border-radius: 4px; color: #d63638;">
+					<span class="dashicons dashicons-warning" style="font-size: 16px; width: 16px; height: 16px; vertical-align: text-bottom;"></span>
+					<?php esc_html_e( 'No user account linked. This sponsor cannot log in to the portal.', 'event-management-system' ); ?>
+				</div>
+				<p>
+					<label for="ems_linked_user_id"><strong><?php esc_html_e( 'Link existing user:', 'event-management-system' ); ?></strong></label>
+				</p>
+			<?php endif; ?>
+
+			<?php
+			wp_dropdown_users( array(
+				'name'              => 'ems_linked_user_id',
+				'id'                => 'ems_linked_user_id',
+				'selected'          => $linked_user_id ? $linked_user_id : 0,
+				'show_option_none'  => __( '&mdash; None &mdash;', 'event-management-system' ),
+				'option_none_value' => 0,
+				'orderby'           => 'display_name',
+				'class'             => 'widefat',
+			) );
+			?>
+
+			<p class="description" style="margin-top: 4px;">
+				<?php esc_html_e( 'Select a user to link, or create a new account below.', 'event-management-system' ); ?>
+			</p>
+
+			<?php
+			$contact_email = get_post_meta( $post->ID, '_ems_sponsor_contact_email', true );
+			$contact_name  = get_post_meta( $post->ID, '_ems_sponsor_contact_name', true );
+
+			if ( $contact_email ) :
+				$email_user_exists = get_user_by( 'email', $contact_email );
+				?>
+				<hr style="margin: 12px 0;">
+				<?php if ( $email_user_exists && ( ! $linked_user || $linked_user->ID !== $email_user_exists->ID ) ) : ?>
+					<p style="margin-bottom: 6px;">
+						<?php echo esc_html( sprintf(
+							/* translators: %s: email address */
+							__( 'A user with email %s already exists.', 'event-management-system' ),
+							$contact_email
+						) ); ?>
+					</p>
+					<button type="button" class="button" id="ems-link-existing-user"
+						data-user-id="<?php echo esc_attr( $email_user_exists->ID ); ?>"
+						data-name="<?php echo esc_attr( $email_user_exists->display_name ); ?>">
+						<?php echo esc_html( sprintf(
+							/* translators: %s: user display name */
+							__( 'Link to %s', 'event-management-system' ),
+							$email_user_exists->display_name
+						) ); ?>
+					</button>
+				<?php elseif ( ! $email_user_exists ) : ?>
+					<button type="button" class="button button-primary" id="ems-create-sponsor-account"
+						data-post-id="<?php echo esc_attr( $post->ID ); ?>"
+						data-nonce="<?php echo esc_attr( wp_create_nonce( 'ems_create_sponsor_account_' . $post->ID ) ); ?>">
+						<?php esc_html_e( 'Create Account', 'event-management-system' ); ?>
+					</button>
+					<p class="description" style="margin-top: 4px;">
+						<?php echo esc_html( sprintf(
+							/* translators: 1: contact name, 2: email address */
+							__( 'Creates a login for %1$s (%2$s) with the Sponsor role.', 'event-management-system' ),
+							$contact_name ? $contact_name : __( 'contact', 'event-management-system' ),
+							$contact_email
+						) ); ?>
+					</p>
+				<?php endif; ?>
+			<?php else : ?>
+				<hr style="margin: 12px 0;">
+				<p class="description">
+					<?php esc_html_e( 'Save a contact email in the sponsor details to enable account creation.', 'event-management-system' ); ?>
+				</p>
+			<?php endif; ?>
+		</div>
+
+		<script>
+		jQuery(function($) {
+			$('#ems-link-existing-user').on('click', function() {
+				var userId = $(this).data('user-id');
+				$('#ems_linked_user_id').val(userId);
+				$(this).text('<?php echo esc_js( __( 'Selected! Save post to confirm.', 'event-management-system' ) ); ?>').prop('disabled', true);
+			});
+
+			$('#ems-create-sponsor-account').on('click', function() {
+				var $btn = $(this);
+				$btn.prop('disabled', true).text('<?php echo esc_js( __( 'Creating...', 'event-management-system' ) ); ?>');
+				$.post(ajaxurl, {
+					action: 'ems_create_sponsor_user_account',
+					post_id: $btn.data('post-id'),
+					nonce: $btn.data('nonce')
+				}, function(response) {
+					if (response.success) {
+						$('#ems-linked-user-box').html(
+							'<div style="padding:8px;background:#f0f6fc;border:1px solid #00a32a;border-radius:4px;color:#00a32a;">' +
+							'<span class="dashicons dashicons-yes-alt" style="vertical-align:text-bottom;"></span> ' +
+							'<span id="ems-linked-user-message"></span></div>' +
+							'<p class="description" style="margin-top:8px;"><?php echo esc_js( __( 'Reload this page to see the updated link.', 'event-management-system' ) ); ?></p>'
+						);
+						$('#ems-linked-user-message').text(response.data.message);
+					} else {
+						$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Create Account', 'event-management-system' ) ); ?>');
+						alert(response.data.message || '<?php echo esc_js( __( 'Error creating account.', 'event-management-system' ) ); ?>');
+					}
+				}).fail(function() {
+					$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Create Account', 'event-management-system' ) ); ?>');
+					alert('<?php echo esc_js( __( 'Network error. Please try again.', 'event-management-system' ) ); ?>');
+				});
+			});
+		});
+		</script>
+		<?php
+	}
+
+	/**
 	 * Save meta box data when the sponsor post is saved.
 	 *
 	 * @since 1.5.0
@@ -526,10 +678,259 @@ class EMS_CPT_Sponsor {
 		$data = wp_unslash( $_POST );
 		EMS_Sponsor_Meta::update_sponsor_meta( $post_id, $data );
 
+		// Handle user linking.
+		if ( isset( $_POST['ems_sponsor_user_link_nonce'] ) &&
+			 wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ems_sponsor_user_link_nonce'] ) ), 'ems_sponsor_user_link_nonce' ) ) {
+			$this->save_linked_user( $post_id );
+		}
+
 		$this->logger->info(
 			sprintf( 'Sponsor #%d meta saved by user #%d', $post_id, get_current_user_id() ),
 			EMS_Logger::CONTEXT_GENERAL
 		);
+	}
+
+	/**
+	 * Save the linked user relationship from the meta box.
+	 *
+	 * @since 1.6.0
+	 * @param int $post_id Sponsor post ID.
+	 */
+	private function save_linked_user( $post_id ) {
+		$new_user_id = isset( $_POST['ems_linked_user_id'] ) ? absint( $_POST['ems_linked_user_id'] ) : 0;
+		$old_user_id = absint( get_post_meta( $post_id, '_ems_sponsor_user_id', true ) );
+
+		if ( $new_user_id === $old_user_id ) {
+			return;
+		}
+
+		// Unlink old user.
+		if ( $old_user_id ) {
+			delete_user_meta( $old_user_id, '_ems_sponsor_id' );
+			$this->logger->info(
+				sprintf( 'Unlinked user #%d from sponsor #%d', $old_user_id, $post_id ),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+		}
+
+		if ( $new_user_id ) {
+			$user = get_user_by( 'ID', $new_user_id );
+			if ( ! $user ) {
+				return;
+			}
+
+			// Ensure user has sponsor role.
+			if ( ! in_array( 'ems_sponsor', $user->roles, true ) ) {
+				$user->add_role( 'ems_sponsor' );
+			}
+
+			// If this user is already linked to a different sponsor, cleanly unlink that sponsor first
+			// to avoid leaving stale bidirectional references.
+			$existing_sponsor_id = absint( get_user_meta( $new_user_id, '_ems_sponsor_id', true ) );
+
+			if ( $existing_sponsor_id && $existing_sponsor_id !== $post_id ) {
+				try {
+					$existing_sponsor_user_id = absint( get_post_meta( $existing_sponsor_id, '_ems_sponsor_user_id', true ) );
+
+					// Only remove the link from the previous sponsor if it actually points to this user.
+					if ( $existing_sponsor_user_id === $new_user_id ) {
+						delete_post_meta( $existing_sponsor_id, '_ems_sponsor_user_id' );
+					}
+
+					$this->logger->info(
+						sprintf(
+							'Reassigned user #%d (%s) from sponsor #%d to sponsor #%d',
+							$new_user_id,
+							$user->user_login,
+							$existing_sponsor_id,
+							$post_id
+						),
+						EMS_Logger::CONTEXT_GENERAL
+					);
+				} catch ( Exception $e ) {
+					// Log the failure but do not cause a fatal error; the link to the new sponsor
+					// will still proceed to avoid partially updated state.
+					if ( method_exists( $this->logger, 'error' ) ) {
+						$this->logger->error(
+							sprintf(
+								'Failed to fully unlink user #%d (%s) from previous sponsor #%d: %s',
+								$new_user_id,
+								$user->user_login,
+								$existing_sponsor_id,
+								$e->getMessage()
+							),
+							EMS_Logger::CONTEXT_GENERAL
+						);
+					}
+				}
+			}
+			// Bidirectional link.
+			update_post_meta( $post_id, '_ems_sponsor_user_id', $new_user_id );
+			update_user_meta( $new_user_id, '_ems_sponsor_id', $post_id );
+
+			$this->logger->info(
+				sprintf( 'Linked user #%d (%s) to sponsor #%d', $new_user_id, $user->user_login, $post_id ),
+				EMS_Logger::CONTEXT_GENERAL
+			);
+		} else {
+			delete_post_meta( $post_id, '_ems_sponsor_user_id' );
+		}
+	}
+
+	/**
+	 * AJAX: Create a WordPress user account for a sponsor post.
+	 *
+	 * Uses the sponsor's contact name and email to create a user with the
+	 * ems_sponsor role, then links user and post bidirectionally.
+	 *
+	 * @since 1.6.0
+	 */
+	public function ajax_create_sponsor_account() {
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$nonce   = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+
+		if ( ! wp_verify_nonce( $nonce, 'ems_create_sponsor_account_' . $post_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid security token.', 'event-management-system' ) ) );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'event-management-system' ) ) );
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post || 'ems_sponsor' !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Sponsor not found.', 'event-management-system' ) ) );
+		}
+
+		// Check if already linked.
+		$existing_link = get_post_meta( $post_id, '_ems_sponsor_user_id', true );
+		if ( $existing_link && get_user_by( 'ID', $existing_link ) ) {
+			wp_send_json_error( array( 'message' => __( 'This sponsor already has a linked account.', 'event-management-system' ) ) );
+		}
+
+		$contact_email = get_post_meta( $post_id, '_ems_sponsor_contact_email', true );
+		$contact_name  = get_post_meta( $post_id, '_ems_sponsor_contact_name', true );
+
+		if ( ! $contact_email || ! is_email( $contact_email ) ) {
+			wp_send_json_error( array( 'message' => __( 'No valid contact email found on this sponsor.', 'event-management-system' ) ) );
+		}
+
+		// Check if user with this email already exists.
+		$existing_user = get_user_by( 'email', $contact_email );
+		if ( $existing_user ) {
+			// Link the existing user.
+			$existing_user->add_role( 'ems_sponsor' );
+
+			// If this user is already linked to a different sponsor, cleanly unlink that sponsor first
+			// to avoid leaving stale bidirectional references.
+			$existing_sponsor_id = absint( get_user_meta( $existing_user->ID, '_ems_sponsor_id', true ) );
+
+			if ( $existing_sponsor_id && $existing_sponsor_id !== $post_id ) {
+				try {
+					$existing_sponsor_user_id = absint( get_post_meta( $existing_sponsor_id, '_ems_sponsor_user_id', true ) );
+
+					// Only remove the link from the previous sponsor if it actually points to this user.
+					if ( $existing_sponsor_user_id === $existing_user->ID ) {
+						delete_post_meta( $existing_sponsor_id, '_ems_sponsor_user_id' );
+					}
+
+					$this->logger->info(
+						sprintf(
+							'Reassigned user #%d (%s) from sponsor #%d to sponsor #%d',
+							$existing_user->ID,
+							$existing_user->user_login,
+							$existing_sponsor_id,
+							$post_id
+						),
+						EMS_Logger::CONTEXT_GENERAL
+					);
+				} catch ( Exception $e ) {
+					// Log the failure but do not cause a fatal error; the link to the new sponsor
+					// will still proceed to avoid partially updated state.
+					if ( method_exists( $this->logger, 'error' ) ) {
+						$this->logger->error(
+							sprintf(
+								'Failed to fully unlink user #%d (%s) from previous sponsor #%d: %s',
+								$existing_user->ID,
+								$existing_user->user_login,
+								$existing_sponsor_id,
+								$e->getMessage()
+							),
+							EMS_Logger::CONTEXT_GENERAL
+						);
+					}
+				}
+			}
+
+			update_post_meta( $post_id, '_ems_sponsor_user_id', $existing_user->ID );
+			update_user_meta( $existing_user->ID, '_ems_sponsor_id', $post_id );
+
+			wp_send_json_success( array(
+				'message' => sprintf(
+					/* translators: %s: user display name */
+					__( 'Linked to existing user: %s', 'event-management-system' ),
+					$existing_user->display_name
+				),
+				'user_id' => $existing_user->ID,
+			) );
+		}
+
+		// Create new user.
+		$username_source = $contact_name ? $contact_name : '';
+		if ( '' === $username_source ) {
+			// Fallback to the local part of the email address before the "@" symbol.
+			$email_parts     = explode( '@', $contact_email );
+			$username_source = $email_parts[0];
+		}
+
+		$username = sanitize_user( strtolower( str_replace( ' ', '.', $username_source ) ), true );
+
+		// Ensure we have a non-empty username after sanitization.
+		if ( '' === $username ) {
+			$username = 'ems_sponsor_' . absint( $post_id );
+		}
+
+		$base_username = $username;
+		$counter       = 1;
+		while ( username_exists( $username ) ) {
+			$username = $base_username . $counter;
+			$counter++;
+		}
+
+		$password = wp_generate_password( 16, true, true );
+		$user_id  = wp_insert_user( array(
+			'user_login'   => $username,
+			'user_email'   => $contact_email,
+			'user_pass'    => $password,
+			'display_name' => $contact_name ? $contact_name : $username,
+			'role'         => 'ems_sponsor',
+		) );
+
+		if ( is_wp_error( $user_id ) ) {
+			wp_send_json_error( array( 'message' => $user_id->get_error_message() ) );
+		}
+
+		// Bidirectional link.
+		update_post_meta( $post_id, '_ems_sponsor_user_id', $user_id );
+		update_user_meta( $user_id, '_ems_sponsor_id', $post_id );
+
+		// Send new user notification.
+		wp_new_user_notification( $user_id, null, 'user' );
+
+		$this->logger->info(
+			sprintf( 'Created sponsor account: user #%d (%s) for sponsor #%d', $user_id, $username, $post_id ),
+			EMS_Logger::CONTEXT_GENERAL
+		);
+
+		wp_send_json_success( array(
+			'message' => sprintf(
+				/* translators: 1: username, 2: email */
+				__( 'Account created: %1$s (%2$s). Password reset email sent.', 'event-management-system' ),
+				$username,
+				$contact_email
+			),
+			'user_id' => $user_id,
+		) );
 	}
 
 	/**

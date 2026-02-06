@@ -261,7 +261,7 @@ class EMS_User_Switcher {
 		}
 
 		// Find the user linked to this sponsor.
-		$user_id = get_post_meta( $post->ID, '_ems_user_id', true );
+		$user_id = get_post_meta( $post->ID, '_ems_sponsor_user_id', true );
 		if ( ! $user_id ) {
 			return;
 		}
