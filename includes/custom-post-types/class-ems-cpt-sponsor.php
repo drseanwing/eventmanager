@@ -723,6 +723,46 @@ class EMS_CPT_Sponsor {
 				$user->add_role( 'ems_sponsor' );
 			}
 
+			// If this user is already linked to a different sponsor, cleanly unlink that sponsor first
+			// to avoid leaving stale bidirectional references.
+			$existing_sponsor_id = absint( get_user_meta( $new_user_id, '_ems_sponsor_id', true ) );
+
+			if ( $existing_sponsor_id && $existing_sponsor_id !== $post_id ) {
+				try {
+					$existing_sponsor_user_id = absint( get_post_meta( $existing_sponsor_id, '_ems_sponsor_user_id', true ) );
+
+					// Only remove the link from the previous sponsor if it actually points to this user.
+					if ( $existing_sponsor_user_id === $new_user_id ) {
+						delete_post_meta( $existing_sponsor_id, '_ems_sponsor_user_id' );
+					}
+
+					$this->logger->info(
+						sprintf(
+							'Reassigned user #%d (%s) from sponsor #%d to sponsor #%d',
+							$new_user_id,
+							$user->user_login,
+							$existing_sponsor_id,
+							$post_id
+						),
+						EMS_Logger::CONTEXT_GENERAL
+					);
+				} catch ( Exception $e ) {
+					// Log the failure but do not cause a fatal error; the link to the new sponsor
+					// will still proceed to avoid partially updated state.
+					if ( method_exists( $this->logger, 'error' ) ) {
+						$this->logger->error(
+							sprintf(
+								'Failed to fully unlink user #%d (%s) from previous sponsor #%d: %s',
+								$new_user_id,
+								$user->user_login,
+								$existing_sponsor_id,
+								$e->getMessage()
+							),
+							EMS_Logger::CONTEXT_GENERAL
+						);
+					}
+				}
+			}
 			// Bidirectional link.
 			update_post_meta( $post_id, '_ems_sponsor_user_id', $new_user_id );
 			update_user_meta( $new_user_id, '_ems_sponsor_id', $post_id );
