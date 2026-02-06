@@ -793,9 +793,22 @@ class EMS_CPT_Sponsor {
 		}
 
 		// Create new user.
-		$username = sanitize_user( strtolower( str_replace( ' ', '.', $contact_name ? $contact_name : $contact_email ) ) );
+		$username_source = $contact_name ? $contact_name : '';
+		if ( '' === $username_source ) {
+			// Fallback to the local part of the email address before the "@" symbol.
+			$email_parts     = explode( '@', $contact_email );
+			$username_source = $email_parts[0];
+		}
+
+		$username = sanitize_user( strtolower( str_replace( ' ', '.', $username_source ) ), true );
+
+		// Ensure we have a non-empty username after sanitization.
+		if ( '' === $username ) {
+			$username = 'ems_sponsor_' . absint( $post_id );
+		}
+
 		$base_username = $username;
-		$counter = 1;
+		$counter       = 1;
 		while ( username_exists( $username ) ) {
 			$username = $base_username . $counter;
 			$counter++;
