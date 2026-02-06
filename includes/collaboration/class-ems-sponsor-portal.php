@@ -265,11 +265,8 @@ class EMS_Sponsor_Portal {
 	 * @return array Array of event data
 	 */
 	public function get_sponsor_events( $sponsor_id = 0 ) {
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'ems_sponsor_events';
-
 		try {
-			// If no sponsor ID provided, get from current user
+			// If no sponsor ID provided, get from current user.
 			if ( 0 === $sponsor_id ) {
 				$sponsor_id = $this->get_user_sponsor_id( get_current_user_id() );
 				if ( ! $sponsor_id ) {
@@ -277,23 +274,49 @@ class EMS_Sponsor_Portal {
 				}
 			}
 
-			$results = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM {$table_name} WHERE sponsor_id = %d ORDER BY created_at DESC",
-				absint( $sponsor_id )
-			) );
+			$linked = get_post_meta( $sponsor_id, '_ems_linked_events', true );
+			if ( ! is_array( $linked ) || empty( $linked ) ) {
+				return array();
+			}
 
 			$events = array();
-			foreach ( $results as $row ) {
-				$event = get_post( $row->event_id );
-				if ( $event ) {
-					$events[] = array(
-						'event_id'      => $row->event_id,
-						'event_title'   => $event->post_title,
-						'event_date'    => get_post_meta( $row->event_id, 'event_start_date', true ),
-						'sponsor_level' => $row->sponsor_level,
-						'linked_at'     => $row->created_at,
-					);
+			foreach ( $linked as $entry ) {
+				// Support both plain IDs and array entries.
+				if ( is_array( $entry ) ) {
+					$event_id   = absint( $entry['event_id'] ?? 0 );
+					$level_id   = absint( $entry['level_id'] ?? 0 );
+					$linked_at  = $entry['linked_date'] ?? '';
+				} else {
+					$event_id   = absint( $entry );
+					$level_id   = 0;
+					$linked_at  = '';
 				}
+
+				if ( ! $event_id ) {
+					continue;
+				}
+
+				$event = get_post( $event_id );
+				if ( ! $event || 'publish' !== $event->post_status ) {
+					continue;
+				}
+
+				// Resolve level name.
+				$level_name = '';
+				if ( $level_id ) {
+					$levels_handler = new EMS_Sponsorship_Levels();
+					$level_obj      = $levels_handler->get_level( $level_id );
+					$level_name     = $level_obj ? $level_obj->level_name : '';
+				}
+
+				$events[] = array(
+					'event_id'      => $event_id,
+					'event_title'   => $event->post_title,
+					'event_date'    => get_post_meta( $event_id, 'event_start_date', true ),
+					'sponsor_level' => $level_name,
+					'level_id'      => $level_id,
+					'linked_at'     => $linked_at,
+				);
 			}
 
 			return $events;
@@ -783,22 +806,24 @@ class EMS_Sponsor_Portal {
 	 * @return int|false Sponsor post ID or false if not found
 	 */
 	public function get_user_sponsor_id( $user_id ) {
-		// Check custom user meta first
+		// Check custom user meta link (set by onboarding or admin linking).
 		$sponsor_id = get_user_meta( $user_id, '_ems_sponsor_id', true );
 		if ( $sponsor_id ) {
 			return absint( $sponsor_id );
 		}
 
-		// Check if user is author of any sponsor posts
-		$sponsors = get_posts( array(
-			'post_type'      => 'ems_sponsor',
-			'author'         => $user_id,
-			'posts_per_page' => 1,
-			'fields'         => 'ids',
-		) );
+		// For non-admin users, also check post authorship as fallback.
+		if ( ! user_can( $user_id, 'manage_options' ) ) {
+			$sponsors = get_posts( array(
+				'post_type'      => 'ems_sponsor',
+				'author'         => $user_id,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+			) );
 
-		if ( ! empty( $sponsors ) ) {
-			return $sponsors[0];
+			if ( ! empty( $sponsors ) ) {
+				return $sponsors[0];
+			}
 		}
 
 		return false;
@@ -1047,11 +1072,9 @@ class EMS_Sponsor_Portal {
 		try {
 			$sponsor_id = absint( $sponsor_id );
 
-			// Count linked events
-			$event_count = $wpdb->get_var( $wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}ems_sponsor_events WHERE sponsor_id = %d",
-				$sponsor_id
-			) );
+			// Count linked events from post meta.
+			$linked_events = get_post_meta( $sponsor_id, '_ems_linked_events', true );
+			$event_count   = is_array( $linked_events ) ? count( $linked_events ) : 0;
 
 			// Count uploaded files
 			$file_count = $wpdb->get_var( $wpdb->prepare(
