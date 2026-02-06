@@ -26,6 +26,7 @@
 		this.nextBtn   = el.querySelector( '.ems-sponsor-carousel__next' );
 		this.dotsWrap  = el.querySelector( '.ems-sponsor-carousel__dots' );
 		this.speed     = parseInt( el.getAttribute( 'data-speed' ), 10 ) || 3000;
+		this.mode      = el.getAttribute( 'data-mode' ) || 'multi';
 		this.current   = 0;
 		this.timer     = null;
 		this.isHovered = false;
@@ -58,13 +59,18 @@
 		 * @return {number} Number of visible slides.
 		 */
 		calculateVisible: function() {
-			var width = this.el.offsetWidth;
-			if ( width >= 1024 ) {
-				this.visible = Math.min( 6, this.totalSlides );
-			} else if ( width >= 768 ) {
-				this.visible = Math.min( 4, this.totalSlides );
+			if ( 'single' === this.mode ) {
+				// Single mode: always show one slide at a time.
+				this.visible = 1;
 			} else {
-				this.visible = Math.min( 2, this.totalSlides );
+				var width = this.el.offsetWidth;
+				if ( width >= 1024 ) {
+					this.visible = Math.min( 6, this.totalSlides );
+				} else if ( width >= 768 ) {
+					this.visible = Math.min( 4, this.totalSlides );
+				} else {
+					this.visible = Math.min( 2, this.totalSlides );
+				}
 			}
 			this.maxIndex = Math.max( 0, this.totalSlides - this.visible );
 

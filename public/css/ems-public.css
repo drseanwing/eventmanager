@@ -2109,6 +2109,130 @@
 }
 
 /* ==========================================================================
+   Sponsor Carousel - Single Mode (Phase 7 - Task 7.8)
+   ========================================================================== */
+
+.ems-sponsor-carousel--single {
+    max-width: 100%;
+    padding: 0 50px;
+}
+
+.ems-sponsor-carousel--single .ems-sponsor-carousel__slide {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding: var(--ems-spacing-md);
+}
+
+.ems-sponsor-carousel--single .ems-sponsor-carousel__slide a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    max-height: 300px;
+    padding: var(--ems-spacing-lg);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    background: var(--ems-color-background);
+}
+
+.ems-sponsor-carousel--single .ems-sponsor-carousel__slide img {
+    max-width: 100%;
+    max-height: 260px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.ems-sponsor-carousel--single .ems-sponsor-carousel__placeholder {
+    font-size: var(--ems-font-size-base);
+    padding: var(--ems-spacing-lg);
+}
+
+.ems-sponsor-carousel__sponsor-name {
+    display: block;
+    text-align: center;
+    font-size: var(--ems-font-size-small);
+    font-weight: 500;
+    color: var(--ems-color-text-dark);
+    margin-top: var(--ems-spacing-sm);
+}
+
+/* ==========================================================================
+   Sponsor Grid (Phase 7 - Task 7.8)
+   ========================================================================== */
+
+.ems-sponsor-grid {
+    margin: var(--ems-spacing-lg) 0;
+}
+
+.ems-sponsor-grid__level-section {
+    margin-bottom: var(--ems-spacing-xl);
+}
+
+.ems-sponsor-grid__level-header {
+    margin-bottom: var(--ems-spacing-md);
+}
+
+.ems-sponsor-grid__items {
+    display: grid;
+    grid-template-columns: repeat(var(--ems-grid-columns, 4), 1fr);
+    gap: var(--ems-spacing-lg);
+}
+
+.ems-sponsor-grid__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--ems-color-text);
+    padding: var(--ems-spacing-md);
+    border: 1px solid var(--ems-color-border);
+    border-radius: var(--ems-border-radius);
+    background: var(--ems-color-background);
+    transition: box-shadow var(--ems-transition), transform var(--ems-transition);
+}
+
+.ems-sponsor-grid__item:hover {
+    box-shadow: var(--ems-box-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.ems-sponsor-grid__logo {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--ems-spacing-sm);
+}
+
+.ems-sponsor-grid__logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.ems-sponsor-grid__logo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--ems-color-background-alt);
+    border-radius: var(--ems-border-radius);
+    font-size: 2.5em;
+    font-weight: 700;
+    color: var(--ems-color-text-light);
+}
+
+.ems-sponsor-grid__name {
+    font-size: var(--ems-font-size-small);
+    font-weight: 500;
+    text-align: center;
+    color: var(--ems-color-text-dark);
+}
+
+/* ==========================================================================
    Phase 7 Responsive
    ========================================================================== */
 
@@ -2128,6 +2252,21 @@
     /* Gallery: max 2 columns on tablet */
     .ems-sponsor-gallery__grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Grid: max 2 columns on tablet */
+    .ems-sponsor-grid__items {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Single mode carousel: smaller max-height */
+    .ems-sponsor-carousel--single .ems-sponsor-carousel__slide a {
+        max-height: 220px;
+        padding: var(--ems-spacing-md);
+    }
+
+    .ems-sponsor-carousel--single .ems-sponsor-carousel__slide img {
+        max-height: 180px;
     }
 
     /* Single sponsor: stack header */
@@ -2169,6 +2308,25 @@
     /* Gallery: single column on small mobile */
     .ems-sponsor-gallery__grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Grid: single column on small mobile */
+    .ems-sponsor-grid__items {
+        grid-template-columns: 1fr;
+    }
+
+    /* Single mode carousel: compact on mobile */
+    .ems-sponsor-carousel--single {
+        padding: 0 35px;
+    }
+
+    .ems-sponsor-carousel--single .ems-sponsor-carousel__slide a {
+        max-height: 160px;
+        padding: var(--ems-spacing-sm);
+    }
+
+    .ems-sponsor-carousel--single .ems-sponsor-carousel__slide img {
+        max-height: 130px;
     }
 
     /* Contact: stack */

@@ -4,9 +4,10 @@
  *
  * Provides shortcodes for public-facing sponsor displays:
  * - [ems_event_sponsors]   - Event sponsors grouped by level with pills
- * - [ems_sponsor_carousel] - Auto-scrolling sponsor logo carousel
+ * - [ems_sponsor_carousel] - Auto-scrolling sponsor logo carousel (multi or single mode)
  * - [ems_sponsor_gallery]  - CSS Grid sponsor logo gallery
  * - [ems_sponsor_levels]   - Sponsorship levels card display
+ * - [ems_sponsor_grid]     - Responsive grid of sponsor logos linked to sponsor pages
  *
  * @package    Event_Management_System
  * @subpackage Event_Management_System/public/shortcodes
@@ -47,6 +48,7 @@ class EMS_Sponsor_Display_Shortcodes {
 		add_shortcode( 'ems_sponsor_carousel', array( $this, 'sponsor_carousel_shortcode' ) );
 		add_shortcode( 'ems_sponsor_gallery', array( $this, 'sponsor_gallery_shortcode' ) );
 		add_shortcode( 'ems_sponsor_levels', array( $this, 'sponsor_levels_shortcode' ) );
+		add_shortcode( 'ems_sponsor_grid', array( $this, 'sponsor_grid_shortcode' ) );
 	}
 
 	// =========================================================================
@@ -320,10 +322,12 @@ class EMS_Sponsor_Display_Shortcodes {
 		$atts = shortcode_atts( array(
 			'event_id' => 0,
 			'speed'    => '3000',
+			'mode'     => 'multi',
 		), $atts, 'ems_sponsor_carousel' );
 
 		$event_id = absint( $atts['event_id'] );
 		$speed    = absint( $atts['speed'] );
+		$mode     = in_array( $atts['mode'], array( 'single', 'multi' ), true ) ? $atts['mode'] : 'multi';
 
 		if ( ! $this->validate_event( $event_id ) ) {
 			return '';
@@ -347,18 +351,22 @@ class EMS_Sponsor_Display_Shortcodes {
 		}
 
 		$carousel_id = 'ems-carousel-' . $event_id . '-' . wp_rand( 100, 999 );
+		$is_single   = ( 'single' === $mode );
+		$image_size  = $is_single ? 'large' : 'medium';
+		$wrapper_class = 'ems-sponsor-carousel' . ( $is_single ? ' ems-sponsor-carousel--single' : '' );
 
 		ob_start();
 		?>
-		<div class="ems-sponsor-carousel"
+		<div class="<?php echo esc_attr( $wrapper_class ); ?>"
 			 id="<?php echo esc_attr( $carousel_id ); ?>"
 			 data-speed="<?php echo esc_attr( $speed ); ?>"
+			 data-mode="<?php echo esc_attr( $mode ); ?>"
 			 role="region"
 			 aria-label="<?php esc_attr_e( 'Sponsor Logo Carousel', 'event-management-system' ); ?>"
 			 aria-roledescription="<?php esc_attr_e( 'carousel', 'event-management-system' ); ?>">
 
 			<!-- Navigation Arrows -->
-			<button class="ems-sponsor-carousel__prev" aria-label="<?php esc_attr_e( 'Previous sponsors', 'event-management-system' ); ?>" type="button">
+			<button class="ems-sponsor-carousel__prev" aria-label="<?php esc_attr_e( 'Previous sponsor', 'event-management-system' ); ?>" type="button">
 				<span aria-hidden="true">&lsaquo;</span>
 			</button>
 
@@ -379,7 +387,7 @@ class EMS_Sponsor_Display_Shortcodes {
 								<?php if ( has_post_thumbnail( $sponsor->ID ) ) : ?>
 									<?php echo get_the_post_thumbnail(
 										$sponsor->ID,
-										'medium',
+										$image_size,
 										array(
 											'alt'     => $sponsor->post_title,
 											'loading' => 'lazy',
@@ -391,12 +399,15 @@ class EMS_Sponsor_Display_Shortcodes {
 									</span>
 								<?php endif; ?>
 							</a>
+							<?php if ( $is_single ) : ?>
+								<span class="ems-sponsor-carousel__sponsor-name"><?php echo esc_html( $sponsor->post_title ); ?></span>
+							<?php endif; ?>
 						</div>
 					<?php endforeach; ?>
 				</div>
 			</div>
 
-			<button class="ems-sponsor-carousel__next" aria-label="<?php esc_attr_e( 'Next sponsors', 'event-management-system' ); ?>" type="button">
+			<button class="ems-sponsor-carousel__next" aria-label="<?php esc_attr_e( 'Next sponsor', 'event-management-system' ); ?>" type="button">
 				<span aria-hidden="true">&rsaquo;</span>
 			</button>
 
@@ -652,6 +663,86 @@ class EMS_Sponsor_Display_Shortcodes {
 					</div>
 				<?php endforeach; ?>
 			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	// =========================================================================
+	// 7.8 - Sponsor Grid Shortcode
+	// =========================================================================
+
+	/**
+	 * Render the sponsor grid shortcode.
+	 *
+	 * Displays all sponsors for an event in a responsive grid, showing their
+	 * logo and linking each to their sponsor page.
+	 *
+	 * Usage: [ems_sponsor_grid event_id="123" columns="4"]
+	 *
+	 * @since 1.6.0
+	 * @param array $atts Shortcode attributes.
+	 * @return string Rendered HTML.
+	 */
+	public function sponsor_grid_shortcode( $atts ) {
+		$atts = shortcode_atts( array(
+			'event_id' => 0,
+			'columns'  => '4',
+		), $atts, 'ems_sponsor_grid' );
+
+		$event_id = absint( $atts['event_id'] );
+		$columns  = max( 1, min( 8, absint( $atts['columns'] ) ) );
+
+		if ( ! $this->validate_event( $event_id ) ) {
+			return '';
+		}
+
+		$grouped = $this->get_sponsors_grouped_by_level( $event_id );
+		if ( empty( $grouped ) ) {
+			return '';
+		}
+
+		ob_start();
+		?>
+		<div class="ems-sponsor-grid" aria-label="<?php esc_attr_e( 'Event Sponsors', 'event-management-system' ); ?>">
+			<?php foreach ( $grouped as $group ) : ?>
+				<?php if ( $group['level'] ) : ?>
+					<div class="ems-sponsor-grid__level-section">
+						<div class="ems-sponsor-grid__level-header">
+							<?php echo $this->render_level_pill( $group['level'] ); ?>
+						</div>
+				<?php endif; ?>
+
+				<div class="ems-sponsor-grid__items" style="--ems-grid-columns: <?php echo esc_attr( $columns ); ?>;">
+					<?php foreach ( $group['sponsors'] as $sponsor ) : ?>
+						<a href="<?php echo esc_url( get_permalink( $sponsor->ID ) ); ?>"
+						   class="ems-sponsor-grid__item"
+						   title="<?php echo esc_attr( $sponsor->post_title ); ?>">
+							<div class="ems-sponsor-grid__logo">
+								<?php if ( has_post_thumbnail( $sponsor->ID ) ) : ?>
+									<?php echo get_the_post_thumbnail(
+										$sponsor->ID,
+										'medium',
+										array(
+											'alt'     => $sponsor->post_title,
+											'loading' => 'lazy',
+										)
+									); ?>
+								<?php else : ?>
+									<span class="ems-sponsor-grid__logo-placeholder">
+										<?php echo esc_html( mb_substr( $sponsor->post_title, 0, 1 ) ); ?>
+									</span>
+								<?php endif; ?>
+							</div>
+							<span class="ems-sponsor-grid__name"><?php echo esc_html( $sponsor->post_title ); ?></span>
+						</a>
+					<?php endforeach; ?>
+				</div>
+
+				<?php if ( $group['level'] ) : ?>
+					</div>
+				<?php endif; ?>
+			<?php endforeach; ?>
 		</div>
 		<?php
 		return ob_get_clean();
