@@ -318,6 +318,45 @@ class EMS_Activator {
 			UNIQUE KEY sponsor_event (sponsor_id, event_id)
 		) $charset_collate;";
 
+		// Presenter files table (Phase 8 - Presenter Dashboard)
+		$sql_presenter_files = "CREATE TABLE IF NOT EXISTS {$table_prefix}ems_presenter_files (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			session_id BIGINT UNSIGNED NOT NULL,
+			event_id BIGINT UNSIGNED NOT NULL,
+			user_id BIGINT UNSIGNED NOT NULL,
+			file_name VARCHAR(255) NOT NULL,
+			file_path VARCHAR(500) NOT NULL,
+			file_type VARCHAR(50) NOT NULL,
+			file_size BIGINT NOT NULL,
+			file_category VARCHAR(50) NOT NULL DEFAULT 'slides',
+			description TEXT NULL,
+			upload_date DATETIME NOT NULL,
+			uploaded_by VARCHAR(20) NOT NULL DEFAULT 'presenter',
+			visibility VARCHAR(20) DEFAULT 'private',
+			downloads INT DEFAULT 0,
+			INDEX session_idx (session_id),
+			INDEX event_idx (event_id),
+			INDEX user_idx (user_id),
+			INDEX category_idx (file_category),
+			INDEX upload_date_idx (upload_date)
+		) $charset_collate;";
+
+		// Presenter availability/timeslot preferences table (Phase 8 - Presenter Dashboard)
+		$sql_presenter_availability = "CREATE TABLE IF NOT EXISTS {$table_prefix}ems_presenter_availability (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			user_id BIGINT UNSIGNED NOT NULL,
+			event_id BIGINT UNSIGNED NOT NULL,
+			timeslot_start DATETIME NOT NULL,
+			timeslot_end DATETIME NOT NULL,
+			preference VARCHAR(20) NOT NULL DEFAULT 'available',
+			note TEXT NULL,
+			updated_at DATETIME NOT NULL,
+			UNIQUE KEY unique_user_slot (user_id, event_id, timeslot_start, timeslot_end),
+			INDEX user_idx (user_id),
+			INDEX event_idx (event_id),
+			INDEX preference_idx (preference)
+		) $charset_collate;";
+
 		// Require WordPress upgrade functionality
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -331,6 +370,8 @@ class EMS_Activator {
 		dbDelta( $sql_sponsor_files );
 		dbDelta( $sql_sponsorship_levels );
 		dbDelta( $sql_sponsor_eoi );
+		dbDelta( $sql_presenter_files );
+		dbDelta( $sql_presenter_availability );
 
 		// Run migrations for existing installations
 		self::run_migrations( $table_prefix );

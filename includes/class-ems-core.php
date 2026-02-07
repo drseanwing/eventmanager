@@ -136,6 +136,7 @@ class EMS_Core {
 
 		// Load collaboration
 		require_once EMS_PLUGIN_DIR . 'includes/collaboration/class-ems-sponsor-portal.php';
+		require_once EMS_PLUGIN_DIR . 'includes/collaboration/class-ems-presenter-portal.php';
 
 		// Load sponsor subsystem
 		require_once EMS_PLUGIN_DIR . 'includes/sponsor/class-ems-sponsor-meta.php';
@@ -298,6 +299,56 @@ class EMS_Core {
 			dbDelta( $sql );
 		}
 
+		// v1.7.0: Create presenter tables
+		$presenter_files_table = $wpdb->prefix . 'ems_presenter_files';
+		$presenter_avail_table = $wpdb->prefix . 'ems_presenter_availability';
+
+		$pf_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $presenter_files_table ) );
+		if ( ! $pf_exists ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql = "CREATE TABLE {$presenter_files_table} (
+				id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+				session_id BIGINT UNSIGNED NOT NULL,
+				event_id BIGINT UNSIGNED NOT NULL,
+				user_id BIGINT UNSIGNED NOT NULL,
+				file_name VARCHAR(255) NOT NULL,
+				file_path VARCHAR(500) NOT NULL,
+				file_type VARCHAR(50) NOT NULL,
+				file_size BIGINT NOT NULL,
+				file_category VARCHAR(50) NOT NULL DEFAULT 'slides',
+				description TEXT NULL,
+				upload_date DATETIME NOT NULL,
+				uploaded_by VARCHAR(20) NOT NULL DEFAULT 'presenter',
+				visibility VARCHAR(20) DEFAULT 'private',
+				downloads INT DEFAULT 0,
+				INDEX session_idx (session_id),
+				INDEX event_idx (event_id),
+				INDEX user_idx (user_id)
+			) $charset_collate;";
+			dbDelta( $sql );
+		}
+
+		$pa_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $presenter_avail_table ) );
+		if ( ! $pa_exists ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql = "CREATE TABLE {$presenter_avail_table} (
+				id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+				user_id BIGINT UNSIGNED NOT NULL,
+				event_id BIGINT UNSIGNED NOT NULL,
+				timeslot_start DATETIME NOT NULL,
+				timeslot_end DATETIME NOT NULL,
+				preference VARCHAR(20) NOT NULL DEFAULT 'available',
+				note TEXT NULL,
+				updated_at DATETIME NOT NULL,
+				UNIQUE KEY unique_user_slot (user_id, event_id, timeslot_start, timeslot_end),
+				INDEX user_idx (user_id),
+				INDEX event_idx (event_id)
+			) $charset_collate;";
+			dbDelta( $sql );
+		}
+
 		$this->logger->info( 'Database upgraded to version ' . EMS_VERSION, EMS_Logger::CONTEXT_GENERAL );
 	}
 
@@ -438,6 +489,9 @@ class EMS_Core {
 
 		// Sponsor file download handler (Phase 4)
 		$this->loader->add_action( 'template_redirect', $plugin_public, 'handle_sponsor_file_download' );
+
+		// Presenter file download handler (Phase 8)
+		$this->loader->add_action( 'template_redirect', $plugin_public, 'handle_presenter_file_download' );
 
 		// REST API endpoints
 		$this->loader->add_action( 'rest_api_init', $plugin_public, 'register_rest_routes' );

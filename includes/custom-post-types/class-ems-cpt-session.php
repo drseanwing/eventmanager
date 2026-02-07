@@ -149,6 +149,16 @@ class EMS_CPT_Session {
 			'side',
 			'default'
 		);
+
+		// Presenter Assignment
+		add_meta_box(
+			'ems_session_presenter',
+			__( 'Presenter Assignment', 'event-management-system' ),
+			array( $this, 'render_presenter_meta_box' ),
+			self::POST_TYPE,
+			'normal',
+			'default'
+		);
 	}
 
 	/**
@@ -289,6 +299,88 @@ class EMS_CPT_Session {
 	}
 
 	/**
+	 * Render presenter assignment meta box
+	 *
+	 * Allows admin to assign an existing user or enter presenter details
+	 * to auto-create an account with the ems_presenter role.
+	 *
+	 * @since 1.7.0
+	 * @param WP_Post $post Post object.
+	 */
+	public function render_presenter_meta_box( $post ) {
+		$presenter_user_id = get_post_meta( $post->ID, 'presenter_user_id', true );
+		$presenter_user    = $presenter_user_id ? get_user_by( 'ID', $presenter_user_id ) : null;
+		?>
+		<table class="form-table">
+			<tr>
+				<th><label for="presenter_assign_mode"><?php esc_html_e( 'Assignment Method', 'event-management-system' ); ?></label></th>
+				<td>
+					<select name="presenter_assign_mode" id="presenter_assign_mode" class="widefat">
+						<option value="existing" <?php selected( (bool) $presenter_user ); ?>><?php esc_html_e( 'Select existing user', 'event-management-system' ); ?></option>
+						<option value="new"><?php esc_html_e( 'Enter new presenter details (auto-create account)', 'event-management-system' ); ?></option>
+						<option value="none" <?php selected( ! $presenter_user_id ); ?>><?php esc_html_e( 'No presenter assigned', 'event-management-system' ); ?></option>
+					</select>
+				</td>
+			</tr>
+			<tr class="ems-presenter-existing">
+				<th><label for="presenter_user_id"><?php esc_html_e( 'Select Presenter', 'event-management-system' ); ?></label></th>
+				<td>
+					<?php
+					$users = get_users( array(
+						'orderby' => 'display_name',
+						'order'   => 'ASC',
+						'fields'  => array( 'ID', 'display_name', 'user_email' ),
+					) );
+					?>
+					<select name="presenter_user_id" id="presenter_user_id" class="widefat">
+						<option value=""><?php esc_html_e( '— Select User —', 'event-management-system' ); ?></option>
+						<?php foreach ( $users as $u ) : ?>
+							<option value="<?php echo esc_attr( $u->ID ); ?>" <?php selected( $presenter_user_id, $u->ID ); ?>>
+								<?php echo esc_html( sprintf( '%s (%s)', $u->display_name, $u->user_email ) ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<?php if ( $presenter_user ) : ?>
+						<p class="description">
+							<?php echo esc_html( sprintf( __( 'Currently assigned: %s (%s)', 'event-management-system' ), $presenter_user->display_name, $presenter_user->user_email ) ); ?>
+						</p>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<tr class="ems-presenter-new" style="display: none;">
+				<th><label for="presenter_new_email"><?php esc_html_e( 'Email', 'event-management-system' ); ?></label></th>
+				<td>
+					<input type="email" name="presenter_new_email" id="presenter_new_email" class="widefat" placeholder="presenter@example.com">
+				</td>
+			</tr>
+			<tr class="ems-presenter-new" style="display: none;">
+				<th><label for="presenter_new_first_name"><?php esc_html_e( 'First Name', 'event-management-system' ); ?></label></th>
+				<td>
+					<input type="text" name="presenter_new_first_name" id="presenter_new_first_name" class="widefat">
+				</td>
+			</tr>
+			<tr class="ems-presenter-new" style="display: none;">
+				<th><label for="presenter_new_last_name"><?php esc_html_e( 'Last Name', 'event-management-system' ); ?></label></th>
+				<td>
+					<input type="text" name="presenter_new_last_name" id="presenter_new_last_name" class="widefat">
+				</td>
+			</tr>
+		</table>
+		<script>
+		jQuery(document).ready(function($) {
+			function togglePresenterFields() {
+				var mode = $('#presenter_assign_mode').val();
+				$('.ems-presenter-existing').toggle(mode === 'existing');
+				$('.ems-presenter-new').toggle(mode === 'new');
+			}
+			$('#presenter_assign_mode').on('change', togglePresenterFields);
+			togglePresenterFields();
+		});
+		</script>
+		<?php
+	}
+
+	/**
 	 * Save meta boxes
 	 *
 	 * @since 1.2.0
@@ -313,7 +405,7 @@ class EMS_CPT_Session {
 
 		// Save meta fields
 		$meta_fields = array( 'event_id', 'session_type', 'location', 'track', 'linked_abstract_id', 'capacity' );
-		
+
 		foreach ( $meta_fields as $field ) {
 			if ( isset( $_POST[ $field ] ) ) {
 				update_post_meta( $post_id, $field, sanitize_text_field( $_POST[ $field ] ) );
@@ -334,6 +426,66 @@ class EMS_CPT_Session {
 		// Initialize registration count if new
 		if ( get_post_status( $post_id ) === 'publish' && ! get_post_meta( $post_id, 'current_registrations', true ) ) {
 			update_post_meta( $post_id, 'current_registrations', 0 );
+		}
+
+		// Save presenter assignment
+		$this->save_presenter_assignment( $post_id );
+	}
+
+	/**
+	 * Handle presenter assignment from the meta box
+	 *
+	 * @since 1.7.0
+	 * @param int $post_id Session post ID.
+	 */
+	private function save_presenter_assignment( $post_id ) {
+		$mode = isset( $_POST['presenter_assign_mode'] ) ? sanitize_text_field( $_POST['presenter_assign_mode'] ) : 'none';
+
+		if ( 'none' === $mode ) {
+			delete_post_meta( $post_id, 'presenter_user_id' );
+			return;
+		}
+
+		if ( 'existing' === $mode ) {
+			$user_id = isset( $_POST['presenter_user_id'] ) ? absint( $_POST['presenter_user_id'] ) : 0;
+			if ( $user_id ) {
+				update_post_meta( $post_id, 'presenter_user_id', $user_id );
+
+				// Ensure user has presenter role
+				$user = get_user_by( 'ID', $user_id );
+				if ( $user && ! in_array( 'ems_presenter', $user->roles, true ) && ! in_array( 'administrator', $user->roles, true ) && ! in_array( 'ems_convenor', $user->roles, true ) ) {
+					$user->add_role( 'ems_presenter' );
+				}
+			}
+			return;
+		}
+
+		if ( 'new' === $mode ) {
+			$email      = isset( $_POST['presenter_new_email'] ) ? sanitize_email( $_POST['presenter_new_email'] ) : '';
+			$first_name = isset( $_POST['presenter_new_first_name'] ) ? sanitize_text_field( $_POST['presenter_new_first_name'] ) : '';
+			$last_name  = isset( $_POST['presenter_new_last_name'] ) ? sanitize_text_field( $_POST['presenter_new_last_name'] ) : '';
+
+			if ( ! $email || ! $first_name || ! $last_name ) {
+				return;
+			}
+
+			$user_helper = new EMS_User_Helper();
+			$result      = $user_helper->create_or_get_presenter(
+				array(
+					'email'      => $email,
+					'first_name' => $first_name,
+					'last_name'  => $last_name,
+				),
+				true
+			);
+
+			if ( $result['success'] ) {
+				update_post_meta( $post_id, 'presenter_user_id', $result['user_id'] );
+				$this->logger->info(
+					sprintf( 'Presenter user %d assigned to session %d', $result['user_id'], $post_id ),
+					EMS_Logger::CONTEXT_GENERAL
+				);
+			}
 		}
 	}
 

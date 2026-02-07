@@ -80,6 +80,10 @@ class EMS_Public {
 		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-sponsor-display-shortcodes.php';
 		new EMS_Sponsor_Display_Shortcodes();
 
+		// Load presenter portal shortcodes (Phase 8)
+		require_once EMS_PLUGIN_DIR . 'public/shortcodes/class-ems-presenter-shortcodes.php';
+		new EMS_Presenter_Shortcodes();
+
 		// Add single sponsor template filter (Phase 7)
 		add_filter( 'single_template', array( $this, 'sponsor_single_template' ) );
 
@@ -1620,6 +1624,30 @@ class EMS_Public {
 
 		// Trigger download
 		$sponsor_portal->download_sponsor_file( $file_id );
+		exit;
+	}
+
+	/**
+	 * Handle presenter file download requests
+	 *
+	 * @since 1.7.0
+	 */
+	public function handle_presenter_file_download() {
+		if ( ! isset( $_GET['ems_download_presenter_file'] ) ) {
+			return;
+		}
+
+		$file_id = absint( $_GET['ems_download_presenter_file'] );
+		if ( ! $file_id ) {
+			wp_die( esc_html__( 'Invalid file ID', 'event-management-system' ) );
+		}
+
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ems_download_presenter_file_' . $file_id ) ) {
+			wp_die( esc_html__( 'Security check failed. Please refresh and try again.', 'event-management-system' ) );
+		}
+
+		$presenter_portal = new EMS_Presenter_Portal();
+		$presenter_portal->download_presenter_file( $file_id );
 		exit;
 	}
 
